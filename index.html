@@ -295,6 +295,18 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
 .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: var(--gold-dim); }
 .form-field.full { grid-column: 1 / -1; }
 /* ── IMPORTANCE TOGGLE ── */
+.month-nav-btn {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-size: 15px; padding: 5px 13px; cursor: pointer; transition: all .15s;
+}
+.month-nav-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+.month-nav-label { font-size: 19px; font-weight: 700; letter-spacing: -.4px; min-width: 160px; text-align: center; }
+input[type="month"].form-input { color-scheme: dark; }
+.pnl-section-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; padding: 10px 0 4px; }
+.pnl-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.pnl-row:last-child { border-bottom: none; }
+.pnl-total { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; font-weight: 700; }
+.pnl-net { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 2px; border-top: 2px solid var(--border); margin-top: 8px; }
 .imp-toggle {
   background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
   color: var(--muted); font-family: inherit; font-size: 12px; font-weight: 600;
@@ -543,80 +555,94 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
 <section class="section" id="financial">
   <div class="page-header">
     <h1>Financial Tracker</h1>
-    <p>Per-channel earnings &amp; spendings log. All data persists in your browser.</p>
+    <p>All-time overview always visible. Navigate months to see P&amp;L, targets, and logs.</p>
   </div>
 
-  <div class="grid-3" style="margin-bottom:24px">
+  <!-- ── ALL-TIME KPIs ── -->
+  <div class="grid-4" style="margin-bottom:24px">
     <div class="stat-card">
-      <div class="stat-label">Total Revenue (Logged)</div>
-      <div class="stat-value gold" id="fin-total">£0</div>
-      <div class="stat-sub" id="fin-total-sub">From confirmed earnings log</div>
+      <div class="stat-label">All-Time Revenue</div>
+      <div class="stat-value gold" id="at-revenue">£0</div>
+      <div class="stat-sub">All channels combined</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Gap to Target</div>
-      <div class="stat-value" style="color:var(--red)" id="fin-gap">—</div>
-      <div class="stat-sub" id="fin-pct-sub">—</div>
+      <div class="stat-label">All-Time Spending</div>
+      <div class="stat-value" style="color:var(--red)" id="at-spending">£0</div>
+      <div class="stat-sub">All categories combined</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Net P&amp;L (All-Time)</div>
+      <div class="stat-value" id="at-net">£0</div>
+      <div class="stat-sub">Revenue minus Spending</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">AdSense RPM</div>
-      <div class="stat-value editable-wrap">
-        £<span id="fin-rpm">4.87</span>
-        <button class="edit-btn" onclick="editStat('fin-rpm','AdSense RPM')">✏️</button>
-      </div>
-      <div class="stat-sub">Verified Mar–Apr 2026 · CPM £8.85</div>
+      <div class="stat-value editable-wrap">£<span id="fin-rpm">4.87</span><button class="edit-btn" onclick="editStat('fin-rpm','AdSense RPM')">✏️</button></div>
+      <div class="stat-sub" id="at-months-sub">Verified Mar–Apr 2026</div>
     </div>
   </div>
 
+  <!-- ── MONTH NAVIGATOR ── -->
+  <div class="card" style="padding:14px 20px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="month-nav-btn" onclick="changeMonth(-1)">◀</button>
+        <span class="month-nav-label" id="month-nav-label">—</span>
+        <button class="month-nav-btn" onclick="changeMonth(1)">▶</button>
+        <button class="btn-secondary" onclick="jumpToCurrentMonth()" style="font-size:11px;padding:5px 12px">Today</button>
+      </div>
+      <button class="btn-primary" onclick="openSetMonthTargetsModal()">Set Month Targets</button>
+    </div>
+  </div>
+
+  <!-- ── MONTHLY: CHART + P&L ── -->
   <div class="grid-2-1">
-    <!-- CHART -->
     <div class="card">
-      <div class="card-title">Revenue vs Spending by Channel</div>
-      <div class="chart-wrap">
-        <canvas id="revenueChart"></canvas>
-      </div>
+      <div class="card-title">Revenue vs Spending — <span id="month-chart-label">—</span></div>
+      <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
     </div>
-    <!-- CHANNEL TARGETS -->
     <div class="card">
-      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Monthly Channel Targets</span>
-        <span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">click to edit</span>
-      </div>
-      <div id="channel-targets-body"><!-- rendered by JS --></div>
-      <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:6px;display:flex;justify-content:space-between;font-size:13px;font-weight:700">
-        <span style="color:var(--muted)">Group Total</span>
-        <span style="color:var(--gold)" id="targets-total">£0</span>
-      </div>
+      <div class="card-title">Monthly P&amp;L — <span id="month-pnl-label">—</span></div>
+      <div id="monthly-pnl"><p style="color:var(--muted);font-size:13px">Loading…</p></div>
     </div>
   </div>
 
-  <!-- EARNINGS LOG -->
+  <!-- ── MONTHLY: CHANNEL TARGETS ── -->
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Channel Targets — <span id="targets-month-label">—</span></span>
+    </div>
+    <div id="channel-targets-body"><!-- rendered by JS --></div>
+    <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;display:flex;justify-content:space-between;font-size:13px;font-weight:700">
+      <span style="color:var(--muted)">Month Total Target</span>
+      <span style="color:var(--gold)" id="targets-total">£0</span>
+    </div>
+  </div>
+
+  <!-- ── MONTHLY: EARNINGS LOG ── -->
   <div class="card" style="margin-bottom:0">
     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-      <span>Earnings Log</span>
+      <span>Earnings — <span id="earnings-month-label">—</span></span>
       <button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="openAddEarningsModal()">+ Add Entry</button>
     </div>
     <table class="data-table">
-      <thead><tr>
-        <th>Date</th><th>Channel</th><th>Type</th><th>Amount</th><th>Notes</th><th></th>
-      </tr></thead>
+      <thead><tr><th>Month</th><th>Channel</th><th>Type</th><th>Amount</th><th>Notes</th><th></th></tr></thead>
       <tbody id="earnings-log-body"></tbody>
     </table>
-    <p id="earnings-empty" style="color:var(--muted);font-size:13px;padding:12px;display:none">No earnings logged yet.</p>
+    <p id="earnings-empty" style="color:var(--muted);font-size:13px;padding:12px 0">No earnings logged for this month.</p>
   </div>
 
-  <!-- SPENDINGS LOG -->
+  <!-- ── MONTHLY: SPENDINGS LOG ── -->
   <div class="card" style="margin-top:16px">
     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-      <span>Spendings Log</span>
+      <span>Spendings — <span id="spendings-month-label">—</span></span>
       <button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="openAddSpendingModal()">+ Add Spending</button>
     </div>
     <table class="data-table">
-      <thead><tr>
-        <th>Date</th><th>Channel</th><th>Category</th><th>Amount</th><th>Notes</th><th></th>
-      </tr></thead>
+      <thead><tr><th>Month</th><th>Channel</th><th>Category</th><th>Amount</th><th>Notes</th><th></th></tr></thead>
       <tbody id="spendings-log-body"></tbody>
     </table>
-    <p id="spendings-empty" style="color:var(--muted);font-size:13px;padding:12px;display:none">No spendings logged yet.</p>
+    <p id="spendings-empty" style="color:var(--muted);font-size:13px;padding:12px 0">No spending logged for this month.</p>
   </div>
 </section>
 
@@ -1200,12 +1226,10 @@ function getRevTotal() {
   return earningsLog.reduce((s, e) => s + Number(e.amount), 0);
 }
 function getRevTarget() {
-  // sum of all channel targets (falls back to 200K if targets not loaded yet)
-  if (typeof channelTargets !== 'undefined') {
-    const sum = Object.values(channelTargets).reduce((a,b) => a + Number(b), 0);
-    return sum > 0 ? sum : 200000;
-  }
-  return 200000;
+  // sum of current calendar month's targets (for Overview section)
+  const t = getMonthTargets(getCurrentMonthKey());
+  const sum = Object.values(t).reduce((a,b) => a+Number(b), 0);
+  return sum > 0 ? sum : 200000;
 }
 
 function updateRevProgress() {
@@ -1270,99 +1294,249 @@ function renderOverviewBreakdown() {
 }
 
 // ══════════════════════════════════════════
-//  EARNINGS LOG
+//  FINANCIAL TRACKER — DATA & STATE
 // ══════════════════════════════════════════
 const CHANNELS = ['TGFbro', 'Group', 'Gaming', 'Food', 'Live', 'Max', 'Troof or Miff'];
 
-const defaultRevTypes  = ['AdSense','Sponsorship','Partnership','Merch','Live Event','Subscription','Other'];
+const defaultRevTypes   = ['AdSense','Sponsorship','Partnership','Merch','Live Event','Subscription','Other'];
 const defaultSpendTypes = ['Staff','Equipment','Travel','Software','Ads','Production','Other'];
-
 let customRevTypes   = JSON.parse(localStorage.getItem('tgf4_revTypes')   || '[]');
 let customSpendTypes = JSON.parse(localStorage.getItem('tgf4_spendTypes') || '[]');
-
-function allRevTypes()   { return [...defaultRevTypes,   ...customRevTypes.filter(t => !defaultRevTypes.includes(t))]; }
+function allRevTypes()   { return [...defaultRevTypes,   ...customRevTypes.filter(t   => !defaultRevTypes.includes(t))]; }
 function allSpendTypes() { return [...defaultSpendTypes, ...customSpendTypes.filter(t => !defaultSpendTypes.includes(t))]; }
 
-const defaultEarnings = [
-  { id:'e1', date: 'Apr 2026', channel: 'TGFbro', type: 'AdSense',     amount: 16474, notes: 'Verified 28-day Mar–Apr 2026' },
-  { id:'e2', date: 'Apr 2026', channel: 'Group',  type: 'Partnership', amount: 30000, notes: 'WhatNot deal — confirmed' },
-];
+// ── Date helpers (YYYY-MM format)
+function getCurrentMonthKey() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
+}
+function formatMonthLabel(ym) {
+  if (!ym || !ym.includes('-')) return ym || '—';
+  const [y,m] = ym.split('-');
+  return ['January','February','March','April','May','June','July','August','September','October','November','December'][parseInt(m)-1] + ' ' + y;
+}
+function offsetMonth(ym, dir) {
+  const [y,m] = ym.split('-').map(Number);
+  const d = new Date(y, m-1+dir, 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function migrateDate(s) {
+  if (!s) return getCurrentMonthKey();
+  if (/^\d{4}-\d{2}$/.test(s)) return s;
+  const mm = {jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+  const r = s.toLowerCase().match(/^(\w{3})\s+(\d{4})$/);
+  return (r && mm[r[1]]) ? `${r[2]}-${mm[r[1]]}` : getCurrentMonthKey();
+}
 
+let currentMonth = getCurrentMonthKey();
+
+// ── Logs
+const defaultEarnings = [
+  { id:'e1', date:'2026-04', channel:'TGFbro', type:'AdSense',     amount:16474, notes:'Verified 28-day Mar–Apr 2026' },
+  { id:'e2', date:'2026-04', channel:'Group',  type:'Partnership', amount:30000, notes:'WhatNot deal — confirmed' },
+];
 let earningsLog = [];
 try {
-  const stored = localStorage.getItem('tgf4_earnings');
-  earningsLog = stored ? JSON.parse(stored) : defaultEarnings.map(e => ({...e}));
+  const raw = localStorage.getItem('tgf4_earnings');
+  earningsLog = raw ? JSON.parse(raw).map(e => ({...e, date:migrateDate(e.date)}))
+                    : defaultEarnings.map(e => ({...e}));
 } catch(e) { earningsLog = defaultEarnings.map(e => ({...e})); }
 
 let spendingsLog = [];
 try {
-  const stored = localStorage.getItem('tgf4_spendings');
-  spendingsLog = stored ? JSON.parse(stored) : [];
+  const raw = localStorage.getItem('tgf4_spendings');
+  spendingsLog = raw ? JSON.parse(raw).map(s => ({...s, date:migrateDate(s.date)})) : [];
 } catch(e) { spendingsLog = []; }
 
-// Per-channel monthly targets
-const defaultTargets = { TGFbro: 25000, Group: 50000, Gaming: 5000, Food: 0, Live: 0, Max: 0, 'Troof or Miff': 2000 };
-let channelTargets = {};
+// ── Per-month targets: { "2026-04": { TGFbro:25000, ... }, ... }
+const defaultTargets = { TGFbro:25000, Group:50000, Gaming:5000, Food:0, Live:0, Max:0, 'Troof or Miff':2000 };
+let monthlyTargets = {};
 try {
-  const stored = localStorage.getItem('tgf4_targets');
-  channelTargets = stored ? JSON.parse(stored) : {...defaultTargets};
-} catch(e) { channelTargets = {...defaultTargets}; }
+  const raw = localStorage.getItem('tgf4_monthlyTargets');
+  if (raw) {
+    monthlyTargets = JSON.parse(raw);
+  } else {
+    const oldRaw = localStorage.getItem('tgf4_targets');
+    monthlyTargets[getCurrentMonthKey()] = oldRaw ? JSON.parse(oldRaw) : {...defaultTargets};
+  }
+} catch(e) { monthlyTargets = {}; }
 
-// ── Earnings log render
+function getMonthTargets(month) {
+  if (monthlyTargets[month]) return {...monthlyTargets[month]};
+  const prev = offsetMonth(month, -1);
+  return monthlyTargets[prev] ? {...monthlyTargets[prev]} : {...defaultTargets};
+}
+function getMonthLog(log, month) {
+  return log.filter(e => migrateDate(e.date) === month);
+}
+
+// ══════════════════════════════════════════
+//  ALL-TIME KPIs
+// ══════════════════════════════════════════
+function renderAllTimeKPIs() {
+  const totalRev   = earningsLog.reduce((s,e)  => s + Number(e.amount), 0);
+  const totalSpend = spendingsLog.reduce((s,e) => s + Number(e.amount), 0);
+  const net        = totalRev - totalSpend;
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('at-revenue',  '£'+totalRev.toLocaleString());
+  set('at-spending', '£'+totalSpend.toLocaleString());
+  set('at-net', (net>=0?'+':'–')+'£'+Math.abs(net).toLocaleString());
+  const netEl = document.getElementById('at-net');
+  if (netEl) netEl.style.color = net>=0 ? 'var(--green)' : 'var(--red)';
+}
+
+// ══════════════════════════════════════════
+//  MONTH NAVIGATION
+// ══════════════════════════════════════════
+function changeMonth(dir) {
+  currentMonth = offsetMonth(currentMonth, dir);
+  renderMonthView();
+}
+function jumpToCurrentMonth() {
+  currentMonth = getCurrentMonthKey();
+  renderMonthView();
+}
+function renderMonthView() {
+  const label = formatMonthLabel(currentMonth);
+  ['month-nav-label','month-chart-label','month-pnl-label','targets-month-label','earnings-month-label','spendings-month-label']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.textContent=label; });
+  renderMonthlyPnL();
+  renderChannelTargets();
+  renderEarningsLog();
+  renderSpendingsLog();
+  updateChartFromLog();
+}
+
+// ══════════════════════════════════════════
+//  MONTHLY P&L
+// ══════════════════════════════════════════
+function renderMonthlyPnL() {
+  const pnl = document.getElementById('monthly-pnl');
+  if (!pnl) return;
+  const mEarn  = getMonthLog(earningsLog,  currentMonth);
+  const mSpend = getMonthLog(spendingsLog, currentMonth);
+  const totalRev   = mEarn.reduce((s,e)  => s+Number(e.amount), 0);
+  const totalSpend = mSpend.reduce((s,e) => s+Number(e.amount), 0);
+  const net = totalRev - totalSpend;
+
+  const revByCh  = {};  mEarn.forEach(e  => { revByCh[e.channel]  = (revByCh[e.channel] ||0)+Number(e.amount); });
+  const spendCat = {};  mSpend.forEach(s => { spendCat[s.type]    = (spendCat[s.type]   ||0)+Number(s.amount); });
+
+  const row   = (lbl,amt,col) => `<div class="pnl-row"><span style="font-size:13px;color:var(--muted)">${lbl}</span><span style="font-size:13px;font-weight:600;color:${col}">${amt}</span></div>`;
+  const total = (lbl,amt,col) => `<div class="pnl-total"><span style="font-size:13px">${lbl}</span><span style="font-size:14px;color:${col}">${amt}</span></div>`;
+
+  let h = `<div class="pnl-section-label">Revenue</div>`;
+  h += Object.keys(revByCh).length
+    ? Object.entries(revByCh).map(([ch,a]) => row(ch,'£'+a.toLocaleString(),'var(--gold)')).join('')
+    : `<div style="font-size:12px;color:var(--muted);padding:6px 0">No revenue this month</div>`;
+  h += total('Revenue Total','£'+totalRev.toLocaleString(),'var(--gold)');
+
+  h += `<div class="pnl-section-label" style="border-top:1px solid var(--border);padding-top:12px">Spending</div>`;
+  h += Object.keys(spendCat).length
+    ? Object.entries(spendCat).map(([cat,a]) => row(cat,'–£'+a.toLocaleString(),'var(--red)')).join('')
+    : `<div style="font-size:12px;color:var(--muted);padding:6px 0">No spending this month</div>`;
+  h += total('Spending Total','–£'+totalSpend.toLocaleString(),'var(--red)');
+
+  const nc = net>=0?'var(--green)':'var(--red)';
+  h += `<div class="pnl-net"><span style="font-size:15px;font-weight:800">Net Profit</span><span style="font-size:17px;font-weight:800;color:${nc}">${net>=0?'+':'–'}£${Math.abs(net).toLocaleString()}</span></div>`;
+  pnl.innerHTML = h;
+}
+
+// ══════════════════════════════════════════
+//  EARNINGS LOG (month-filtered)
+// ══════════════════════════════════════════
 function renderEarningsLog() {
   const body  = document.getElementById('earnings-log-body');
   const empty = document.getElementById('earnings-empty');
   if (!body) return;
-  if (!earningsLog.length) {
-    body.innerHTML = '';
-    if (empty) empty.style.display = 'block';
-  } else {
-    if (empty) empty.style.display = 'none';
-    body.innerHTML = earningsLog.map((e, i) => `
-      <tr>
-        <td>${e.date}</td><td>${e.channel}</td><td>${e.type}</td>
+  const entries = getMonthLog(earningsLog, currentMonth);
+  if (!entries.length) { body.innerHTML=''; if(empty) empty.style.display='block'; }
+  else {
+    if(empty) empty.style.display='none';
+    body.innerHTML = entries.map(e => {
+      const i = earningsLog.indexOf(e);
+      return `<tr>
+        <td>${formatMonthLabel(e.date)}</td><td>${e.channel}</td><td>${e.type}</td>
         <td style="color:var(--gold);font-weight:700">£${Number(e.amount).toLocaleString()}</td>
-        <td style="color:var(--muted);font-size:12px;max-width:200px;white-space:normal">${e.notes || ''}</td>
+        <td style="color:var(--muted);font-size:12px;max-width:180px;white-space:normal">${e.notes||''}</td>
         <td style="display:flex;gap:4px">
           <button class="edit-btn" onclick="editEarningsEntry(${i})">✏️</button>
-          <button class="edit-btn" onclick="deleteEarningsEntry(${i})" title="Delete">🗑</button>
-        </td>
-      </tr>
-    `).join('');
+          <button class="edit-btn" onclick="deleteEarningsEntry(${i})">🗑</button>
+        </td></tr>`;
+    }).join('');
   }
+  renderAllTimeKPIs();
+  renderMonthlyPnL();
   updateChartFromLog();
-  renderChannelTargets();
   renderOverviewBreakdown();
   updateRevProgress();
 }
 
 function deleteEarningsEntry(i) {
-  earningsLog.splice(i, 1);
+  earningsLog.splice(i,1);
   localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
   renderEarningsLog();
+  renderChannelTargets();
 }
 
+// ══════════════════════════════════════════
+//  SPENDINGS LOG (month-filtered)
+// ══════════════════════════════════════════
+function renderSpendingsLog() {
+  const body  = document.getElementById('spendings-log-body');
+  const empty = document.getElementById('spendings-empty');
+  if (!body) return;
+  const entries = getMonthLog(spendingsLog, currentMonth);
+  if (!entries.length) { body.innerHTML=''; if(empty) empty.style.display='block'; }
+  else {
+    if(empty) empty.style.display='none';
+    body.innerHTML = entries.map(s => {
+      const i = spendingsLog.indexOf(s);
+      return `<tr>
+        <td>${formatMonthLabel(s.date)}</td><td>${s.channel}</td><td>${s.type}</td>
+        <td style="color:var(--red);font-weight:700">–£${Number(s.amount).toLocaleString()}</td>
+        <td style="color:var(--muted);font-size:12px;max-width:180px;white-space:normal">${s.notes||''}</td>
+        <td style="display:flex;gap:4px">
+          <button class="edit-btn" onclick="editSpendingEntry(${i})">✏️</button>
+          <button class="edit-btn" onclick="deleteSpendingEntry(${i})">🗑</button>
+        </td></tr>`;
+    }).join('');
+  }
+  renderAllTimeKPIs();
+  renderMonthlyPnL();
+  updateChartFromLog();
+}
+
+function deleteSpendingEntry(i) {
+  spendingsLog.splice(i,1);
+  localStorage.setItem('tgf4_spendings', JSON.stringify(spendingsLog));
+  renderSpendingsLog();
+}
+
+// ══════════════════════════════════════════
+//  LOG ENTRY FORMS
+// ══════════════════════════════════════════
 function logFormHtml(entry, isSpending) {
   const types = isSpending ? allSpendTypes() : allRevTypes();
   const typeKey = isSpending ? 'tgf4_spendTypes' : 'tgf4_revTypes';
   return `
     <div class="form-row">
       <div>
-        <label class="form-label">Date</label>
-        <input class="form-input" id="lf-date" value="${entry.date||''}" placeholder="e.g. Apr 2026">
+        <label class="form-label">Month</label>
+        <input class="form-input" id="lf-date" type="month" value="${entry.date||currentMonth}">
       </div>
       <div>
         <label class="form-label">Channel</label>
         <select class="form-input" id="lf-channel">
-          ${CHANNELS.map(c => `<option value="${c}" ${entry.channel===c?'selected':''}>${c}</option>`).join('')}
+          ${CHANNELS.map(c=>`<option value="${c}" ${entry.channel===c?'selected':''}>${c}</option>`).join('')}
         </select>
       </div>
     </div>
     <div class="form-row">
       <div>
-        <label class="form-label">${isSpending ? 'Category' : 'Type'}</label>
+        <label class="form-label">${isSpending?'Category':'Type'}</label>
         <select class="form-input" id="lf-type" onchange="handleCustomType(this,'${typeKey}')">
-          ${types.map(t => `<option value="${t}" ${entry.type===t?'selected':''}>${t}</option>`).join('')}
+          ${types.map(t=>`<option value="${t}" ${entry.type===t?'selected':''}>${t}</option>`).join('')}
           <option value="__custom__">+ Add new type…</option>
         </select>
       </div>
@@ -1378,34 +1552,24 @@ function logFormHtml(entry, isSpending) {
     <div>
       <label class="form-label">Notes</label>
       <input class="form-input" id="lf-notes" value="${(entry.notes||'').replace(/"/g,'&quot;')}" placeholder="Optional">
-    </div>
-  `;
+    </div>`;
 }
 
-function handleCustomType(sel, storageKey) {
-  const wrap = document.getElementById('lf-custom-wrap');
-  if (sel.value === '__custom__') {
-    wrap.style.display = 'block';
-    document.getElementById('lf-custom-type').focus();
-  } else {
-    wrap.style.display = 'none';
-  }
+function handleCustomType(sel) {
+  const w = document.getElementById('lf-custom-wrap');
+  if (sel.value==='__custom__') { w.style.display='block'; document.getElementById('lf-custom-type').focus(); }
+  else w.style.display='none';
 }
 
 function saveLogEntry(entry, isSpending) {
-  const typeEl   = document.getElementById('lf-type');
-  const customEl = document.getElementById('lf-custom-type');
+  const typeEl=document.getElementById('lf-type'), customEl=document.getElementById('lf-custom-type');
   let type = typeEl.value;
-  if (type === '__custom__') {
-    type = customEl.value.trim();
-    if (!type) return false;
-    if (isSpending) {
-      if (!customSpendTypes.includes(type)) { customSpendTypes.push(type); localStorage.setItem('tgf4_spendTypes', JSON.stringify(customSpendTypes)); }
-    } else {
-      if (!customRevTypes.includes(type)) { customRevTypes.push(type); localStorage.setItem('tgf4_revTypes', JSON.stringify(customRevTypes)); }
-    }
+  if (type==='__custom__') {
+    type = customEl.value.trim(); if(!type) return false;
+    if (isSpending) { if(!customSpendTypes.includes(type)){customSpendTypes.push(type);localStorage.setItem('tgf4_spendTypes',JSON.stringify(customSpendTypes));} }
+    else            { if(!customRevTypes.includes(type))  {customRevTypes.push(type);  localStorage.setItem('tgf4_revTypes',  JSON.stringify(customRevTypes));} }
   }
-  entry.date    = document.getElementById('lf-date').value.trim() || 'TBD';
+  entry.date    = document.getElementById('lf-date').value    || currentMonth;
   entry.channel = document.getElementById('lf-channel').value;
   entry.type    = type;
   entry.amount  = parseFloat(document.getElementById('lf-amount').value) || 0;
@@ -1414,190 +1578,134 @@ function saveLogEntry(entry, isSpending) {
 }
 
 function openAddEarningsModal() {
-  const entry = { id: 'e'+Date.now(), date:'', channel:'TGFbro', type:'AdSense', amount:'', notes:'' };
-  openModal('Add Earnings Entry', logFormHtml(entry, false), () => {
-    if (!saveLogEntry(entry, false)) return;
-    earningsLog.push(entry);
+  const e = { id:'e'+Date.now(), date:currentMonth, channel:'TGFbro', type:'AdSense', amount:'', notes:'' };
+  openModal('Add Earnings Entry', logFormHtml(e,false), () => {
+    if (!saveLogEntry(e,false)) return;
+    earningsLog.push(e);
     localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
-    renderEarningsLog();
-    closeModal();
+    renderEarningsLog(); renderChannelTargets(); closeModal();
   }, 'Add');
 }
 
 function editEarningsEntry(i) {
-  const entry = earningsLog[i];
-  openModal('Edit Earnings Entry', logFormHtml({...entry}, false), () => {
-    if (!saveLogEntry(entry, false)) return;
+  const e = earningsLog[i];
+  openModal('Edit Entry', logFormHtml({...e},false), () => {
+    if (!saveLogEntry(e,false)) return;
     localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
-    renderEarningsLog();
-    closeModal();
+    renderEarningsLog(); renderChannelTargets(); closeModal();
   });
 }
 
-// ── Spendings log render
-function renderSpendingsLog() {
-  const body  = document.getElementById('spendings-log-body');
-  const empty = document.getElementById('spendings-empty');
-  if (!body) return;
-  if (!spendingsLog.length) {
-    body.innerHTML = '';
-    if (empty) empty.style.display = 'block';
-  } else {
-    if (empty) empty.style.display = 'none';
-    body.innerHTML = spendingsLog.map((s, i) => `
-      <tr>
-        <td>${s.date}</td><td>${s.channel}</td><td>${s.type}</td>
-        <td style="color:var(--red);font-weight:700">–£${Number(s.amount).toLocaleString()}</td>
-        <td style="color:var(--muted);font-size:12px;max-width:200px;white-space:normal">${s.notes || ''}</td>
-        <td style="display:flex;gap:4px">
-          <button class="edit-btn" onclick="editSpendingEntry(${i})">✏️</button>
-          <button class="edit-btn" onclick="deleteSpendingEntry(${i})" title="Delete">🗑</button>
-        </td>
-      </tr>
-    `).join('');
-  }
-  updateChartFromLog();
-}
-
 function openAddSpendingModal() {
-  const entry = { id: 's'+Date.now(), date:'', channel:'TGFbro', type:'Staff', amount:'', notes:'' };
-  openModal('Add Spending', logFormHtml(entry, true), () => {
-    if (!saveLogEntry(entry, true)) return;
-    spendingsLog.push(entry);
+  const s = { id:'s'+Date.now(), date:currentMonth, channel:'TGFbro', type:'Staff', amount:'', notes:'' };
+  openModal('Add Spending', logFormHtml(s,true), () => {
+    if (!saveLogEntry(s,true)) return;
+    spendingsLog.push(s);
     localStorage.setItem('tgf4_spendings', JSON.stringify(spendingsLog));
-    renderSpendingsLog();
-    closeModal();
+    renderSpendingsLog(); closeModal();
   }, 'Add');
 }
 
 function editSpendingEntry(i) {
-  const entry = spendingsLog[i];
-  openModal('Edit Spending', logFormHtml({...entry}, true), () => {
-    if (!saveLogEntry(entry, true)) return;
+  const s = spendingsLog[i];
+  openModal('Edit Spending', logFormHtml({...s},true), () => {
+    if (!saveLogEntry(s,true)) return;
     localStorage.setItem('tgf4_spendings', JSON.stringify(spendingsLog));
-    renderSpendingsLog();
-    closeModal();
+    renderSpendingsLog(); closeModal();
   });
 }
 
-function deleteSpendingEntry(i) {
-  spendingsLog.splice(i, 1);
-  localStorage.setItem('tgf4_spendings', JSON.stringify(spendingsLog));
-  renderSpendingsLog();
-}
-
-// ── Channel targets
+// ══════════════════════════════════════════
+//  CHANNEL TARGETS (per-month)
+// ══════════════════════════════════════════
 function renderChannelTargets() {
   const body = document.getElementById('channel-targets-body');
   if (!body) return;
-  const revByChannel = {};
-  earningsLog.forEach(e => { revByChannel[e.channel] = (revByChannel[e.channel]||0) + Number(e.amount); });
+  const targets = getMonthTargets(currentMonth);
+  const revByCh = {};
+  getMonthLog(earningsLog, currentMonth).forEach(e => { revByCh[e.channel]=(revByCh[e.channel]||0)+Number(e.amount); });
   let groupTotal = 0;
   body.innerHTML = CHANNELS.map(ch => {
-    const target = channelTargets[ch] || 0;
-    const actual = revByChannel[ch] || 0;
-    const pct    = target > 0 ? Math.min(100, Math.round(actual / target * 100)) : 0;
-    groupTotal  += target;
-    return `
-      <div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span style="font-size:13px;font-weight:600">${ch}</span>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:12px;color:var(--muted)">£${actual.toLocaleString()} / </span>
-            <span style="font-size:12px;color:var(--gold);font-weight:700;cursor:pointer" onclick="editChannelTarget('${ch}')" title="Edit target">£${target.toLocaleString()} ✏️</span>
-          </div>
+    const tgt = targets[ch]||0, act = revByCh[ch]||0;
+    const pct = tgt>0 ? Math.min(100,Math.round(act/tgt*100)) : 0;
+    groupTotal += tgt;
+    const barCol = pct>=100?'var(--green)':pct>50?'var(--gold)':'var(--amber)';
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:13px;font-weight:600">${ch}</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;color:var(--muted)">£${act.toLocaleString()}</span>
+          <span style="font-size:11px;color:var(--muted)">/</span>
+          <span style="font-size:12px;color:var(--gold);font-weight:700">£${tgt.toLocaleString()}</span>
+          <span style="font-size:11px;color:var(--muted)">(${pct}%)</span>
         </div>
-        <div class="progress-wrap" style="height:5px"><div class="progress-bar" style="width:${pct}%;background:${pct>=100?'var(--green)':pct>50?'var(--gold)':'var(--amber)'}"></div></div>
       </div>
-    `;
+      <div class="progress-wrap" style="height:5px"><div class="progress-bar" style="width:${pct}%;background:${barCol}"></div></div>
+    </div>`;
   }).join('');
-  const totalEl = document.getElementById('targets-total');
-  if (totalEl) totalEl.textContent = '£' + groupTotal.toLocaleString();
+  const el=document.getElementById('targets-total'); if(el) el.textContent='£'+groupTotal.toLocaleString();
 }
 
-function editChannelTarget(ch) {
-  openModal(`Edit Target — ${ch}`, `
-    <div>
-      <label class="form-label">Monthly Revenue Target (£)</label>
-      <input class="form-input" id="ct-val" type="number" min="0" value="${channelTargets[ch]||0}">
-    </div>
-    <p style="font-size:12px;color:var(--muted);margin-top:8px">This is the fixed monthly target for <strong>${ch}</strong>. The group total updates automatically.</p>
-  `, () => {
-    channelTargets[ch] = parseFloat(document.getElementById('ct-val').value) || 0;
-    localStorage.setItem('tgf4_targets', JSON.stringify(channelTargets));
-    renderChannelTargets();
-    updateRevProgress();
-    closeModal();
-  }, 'Save Target');
+function openSetMonthTargetsModal() {
+  const targets = getMonthTargets(currentMonth);
+  const rows = CHANNELS.map(ch => {
+    const sid = 'mt-'+ch.replace(/[\s\/]+/g,'-').toLowerCase();
+    return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <label class="form-label" style="margin:0;min-width:130px;text-transform:none;font-size:13px;font-weight:600;letter-spacing:0">${ch}</label>
+      <input class="form-input" id="${sid}" type="number" min="0" value="${targets[ch]||0}">
+    </div>`;
+  }).join('');
+  openModal('Set Targets — '+formatMonthLabel(currentMonth),
+    `<p style="font-size:12px;color:var(--muted);margin-bottom:14px">Monthly revenue targets for <strong>${formatMonthLabel(currentMonth)}</strong>. Each month is independent.</p>${rows}`,
+    () => {
+      if (!monthlyTargets[currentMonth]) monthlyTargets[currentMonth]={};
+      CHANNELS.forEach(ch => {
+        const sid = 'mt-'+ch.replace(/[\s\/]+/g,'-').toLowerCase();
+        const el = document.getElementById(sid);
+        if (el) monthlyTargets[currentMonth][ch] = parseFloat(el.value)||0;
+      });
+      localStorage.setItem('tgf4_monthlyTargets', JSON.stringify(monthlyTargets));
+      renderChannelTargets(); updateRevProgress(); closeModal();
+    }, 'Save Targets');
 }
 
-// ── Chart update
+// ══════════════════════════════════════════
+//  CHART.JS (month-filtered)
+// ══════════════════════════════════════════
 function updateChartFromLog() {
   if (!window.revenueChart) return;
-  const revData   = new Array(CHANNELS.length).fill(0);
-  const spendData = new Array(CHANNELS.length).fill(0);
-  earningsLog.forEach(e => {
-    const idx = CHANNELS.findIndex(c => c.toLowerCase() === e.channel.toLowerCase());
-    if (idx >= 0) revData[idx] += Number(e.amount);
-  });
-  spendingsLog.forEach(s => {
-    const idx = CHANNELS.findIndex(c => c.toLowerCase() === s.channel.toLowerCase());
-    if (idx >= 0) spendData[idx] -= Number(s.amount); // negative for chart
-  });
+  const mEarn  = getMonthLog(earningsLog,  currentMonth);
+  const mSpend = getMonthLog(spendingsLog, currentMonth);
+  const revData = new Array(CHANNELS.length).fill(0);
+  const spnData = new Array(CHANNELS.length).fill(0);
+  mEarn.forEach(e  => { const i=CHANNELS.findIndex(c=>c.toLowerCase()===e.channel.toLowerCase()); if(i>=0) revData[i]+=Number(e.amount); });
+  mSpend.forEach(s => { const i=CHANNELS.findIndex(c=>c.toLowerCase()===s.channel.toLowerCase()); if(i>=0) spnData[i]-=Number(s.amount); });
   window.revenueChart.data.datasets[0].data = revData;
-  window.revenueChart.data.datasets[1].data = spendData;
+  window.revenueChart.data.datasets[1].data = spnData;
   window.revenueChart.update();
 }
 
-// ══════════════════════════════════════════
-//  CHART.JS
-// ══════════════════════════════════════════
 function initChart() {
   const ctx = document.getElementById('revenueChart');
   if (!ctx) return;
   window.revenueChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['TGFbro', 'Group', 'Gaming', 'Food', 'Live', 'Max', 'Troof'],
+      labels: ['TGFbro','Group','Gaming','Food','Live','Max','Troof'],
       datasets: [
-        {
-          label: 'Revenue',
-          data: [0,0,0,0,0,0,0],
-          backgroundColor: 'rgba(201,168,76,0.75)',
-          borderColor:     'rgba(201,168,76,1)',
-          borderWidth: 1.5, borderRadius: 5,
-        },
-        {
-          label: 'Spending',
-          data: [0,0,0,0,0,0,0],
-          backgroundColor: 'rgba(239,68,68,0.65)',
-          borderColor:     'rgba(239,68,68,1)',
-          borderWidth: 1.5, borderRadius: 5,
-        }
+        { label:'Revenue', data:[0,0,0,0,0,0,0], backgroundColor:'rgba(201,168,76,0.75)', borderColor:'rgba(201,168,76,1)', borderWidth:1.5, borderRadius:5 },
+        { label:'Spending', data:[0,0,0,0,0,0,0], backgroundColor:'rgba(239,68,68,0.65)', borderColor:'rgba(239,68,68,1)', borderWidth:1.5, borderRadius:5 }
       ]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive:true, maintainAspectRatio:false,
       plugins: {
-        legend: {
-          display: true,
-          labels: { color: '#9ca3af', font: { family: 'Space Grotesk', size: 11 }, boxWidth: 12, padding: 16 }
-        },
-        tooltip: {
-          callbacks: {
-            label: c => {
-              const v = c.raw;
-              return ` ${c.dataset.label}: ${v < 0 ? '-' : ''}£${Math.abs(v).toLocaleString()}`;
-            }
-          }
-        }
+        legend: { display:true, labels:{ color:'#9ca3af', font:{family:'Space Grotesk',size:11}, boxWidth:12, padding:16 } },
+        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw<0?'–':''}£${Math.abs(c.raw).toLocaleString()}` } }
       },
       scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280', font: { family: 'Space Grotesk', size: 11 } } },
-        y: {
-          grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { color: '#6b7280', font: { family: 'Space Grotesk', size: 11 }, callback: v => (v < 0 ? '-' : '') + '£' + Math.abs(v/1000).toFixed(0) + 'K' }
-        }
+        x: { grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#6b7280',font:{family:'Space Grotesk',size:11}} },
+        y: { grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#6b7280',font:{family:'Space Grotesk',size:11}, callback:v=>(v<0?'–':'')+'£'+Math.abs(v/1000).toFixed(0)+'K'} }
       }
     }
   });
@@ -2103,9 +2211,8 @@ function openAddRiskModal() {
 document.addEventListener('DOMContentLoaded', () => {
   restoreEdits();
   initChart();
-  renderEarningsLog();
-  renderSpendingsLog();
-  renderChannelTargets();
+  renderAllTimeKPIs();
+  renderMonthView();       // sets currentMonth labels + renders all monthly views
   updateRevProgress();
   renderStaffTable();
   renderHireTracker();
