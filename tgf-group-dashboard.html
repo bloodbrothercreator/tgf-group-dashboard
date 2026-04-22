@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TGF Group — Company Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0c0e;
+  --surface: #131316;
+  --surface2: #1a1a1f;
+  --surface3: #222228;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f0f0f0;
+  --text2: #888;
+  --text3: #555;
+  --gold: #c9a84c;
+  --gold-light: #e8c97a;
+  --gold-dim: rgba(201,168,76,0.15);
+  --green: #2ecc71;
+  --green-bg: rgba(46,204,113,0.1);
+  --red: #e74c3c;
+  --red-bg: rgba(231,76,60,0.1);
+  --blue: #3498db;
+  --blue-bg: rgba(52,152,219,0.1);
+  --purple: #9b59b6;
+  --amber: #f39c12;
+  --pink: #e91e8c;
+  --tgfbro: #7c6fcd;
+  --gaming: #27ae60;
+  --tom: #e67e22;
+  --food: #e91e8c;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* LAYOUT */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0;
+  width: 220px;
+  height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  overflow-y: auto;
+}
+.main {
+  margin-left: 220px;
+  min-height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar-logo {
+  padding: 28px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo .brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  line-height: 1;
+}
+.sidebar-logo .sub {
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.nav-section {
+  padding: 16px 12px 8px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  font-weight: 600;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  border-radius: 6px;
+  margin: 1px 8px;
+  transition: all .15s;
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--gold-dim); color: var(--gold); }
+.nav-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--text3);
+}
+
+/* SECTIONS */
+.section {
+  display: none;
+  padding: 40px 40px 60px;
+  min-height: 100vh;
+  animation: fadeIn .2s ease;
+}
+.section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* SECTION HEADER */
+.section-header {
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.section-eyebrow {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 42px;
+  letter-spacing: 2px;
+  color: var(--text);
+  line-height: 1;
+}
+.section-desc {
+  font-size: 14px;
+  color: var(--text2);
+  margin-top: 8px;
+  max-width: 600px;
+}
+
+/* STAT CARDS */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.stat-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.sv-gold { color: var(--gold); }
+.sv-green { color: var(--green); }
+.sv-red { color: var(--red); }
+.sv-blue { color: var(--blue); }
+
+/* CARDS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.card-sub {
+  font-size: 11px;
+  color: var(--text3);
+}
+
+/* GRID */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* BADGES */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  letter-spacing: .3px;
+}
+.badge-paid { background: var(--green-bg); color: var(--green); }
+.badge-hire { background: var(--red-bg); color: var(--red); }
+.badge-gold { background: var(--gold-dim); color: var(--gold); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+
+/* ORG CHART */
+.silo-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.silo-tab {
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  font-size: 12px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text2);
+  transition: all .15s;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+}
+.silo-tab:hover { color: var(--text); border-color: var(--border2); }
+.silo-tab.active { color: #0c0c0e; font-weight: 600; }
+
+.tree { display: flex; flex-direction: column; align-items: center; }
+.vline { width: 1px; height: 20px; background: var(--border2); margin: 0 auto; }
+.branch-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; align-items: flex-start; }
+.branch-col { display: flex; flex-direction: column; align-items: center; }
+
+.role-card {
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  background: var(--surface2);
+  padding: 12px 14px;
+  min-width: 152px;
+  max-width: 185px;
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+}
+.role-card:hover { border-color: var(--gold); transform: translateY(-1px); }
+.role-card.paid { border-left: 3px solid var(--green); border-radius: 0 10px 10px 0; }
+.role-card.hire { border-left: 3px solid var(--red); border-radius: 0 10px 10px 0; }
+.role-card.founder { border: 1.5px solid var(--gold); border-radius: 10px; }
+.role-card.silo-top { border-top: 3px solid var(--silo-color, var(--gold)); border-radius: 0 0 10px 10px; }
+.role-card.silo-top.hire { border-left: 3px solid var(--red); border-radius: 0 0 10px 0; }
+
+.rc-name {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+.rc-title { font-size: 11px; font-weight: 500; color: var(--text); line-height: 1.3; margin-bottom: 2px; }
+.rc-reports { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+.rc-salary { font-size: 11px; font-weight: 600; margin-top: 3px; }
+.rc-paid-note { font-size: 9px; font-style: italic; margin-top: 1px; color: var(--green); }
+
+/* COST TOTALS */
+.cost-totals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.cost-card {
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+.cc-all { background: var(--surface2); border: 1px solid var(--border2); }
+.cc-paid { background: var(--green-bg); border: 1px solid rgba(46,204,113,0.2); }
+.cc-hire { background: var(--red-bg); border: 1px solid rgba(231,76,60,0.2); }
+.cc-val { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 1px; line-height: 1; }
+.cc-all .cc-val { color: var(--text); }
+.cc-paid .cc-val { color: var(--green); }
+.cc-hire .cc-val { color: var(--red); }
+.cc-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; line-height: 1.4; }
+.cc-all .cc-lbl { color: var(--text3); }
+.cc-paid .cc-lbl { color: var(--green); opacity: .7; }
+.cc-hire .cc-lbl { color: var(--red); opacity: .7; }
+
+/* HIRE TRACKER */
+.hire-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  transition: all .2s;
+}
+.hire-row.filled { opacity: .6; border-color: var(--green); background: var(--green-bg); }
+.hire-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  color: var(--gold);
+  min-width: 40px;
+}
+.hire-info { flex: 1; }
+.hire-title { font-size: 13px; font-weight: 500; color: var(--text); }
+.hire-detail { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.hire-salary { font-size: 13px; font-weight: 600; color: var(--red); min-width: 80px; text-align: right; }
+.hire-row.filled .hire-salary { color: var(--green); }
+.hire-toggle {
+  width: 36px; height: 20px;
+  background: var(--surface3);
+  border-radius: 10px;
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  position: relative;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.hire-toggle::after {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  background: var(--text3);
+  border-radius: 50%;
+  top: 2px; left: 2px;
+  transition: all .2s;
+}
+.hire-row.filled .hire-toggle { background: var(--green); }
+.hire-row.filled .hire-toggle::after { left: 18px; background: white; }
+
+/* MILESTONE */
+.milestone-item {
+  display: flex;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.milestone-item:last-child { border-bottom: none; }
+.ms-phase {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gold);
+  min-width: 90px;
+  padding-top: 2px;
+}
+.ms-content { flex: 1; }
+.ms-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+.ms-desc { font-size: 12px; color: var(--text3); }
+.ms-check {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+  background: transparent;
+  color: transparent;
+  font-size: 11px;
+}
+.ms-check.done { background: var(--green); border-color: var(--green); color: white; }
+
+/* REVENUE BARS */
+.rev-row {
+  margin-bottom: 16px;
+}
+.rev-channel { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 6px; display: flex; justify-content: space-between; }
+.rev-bar-bg { background: var(--surface2); border-radius: 4px; height: 8px; overflow: hidden; }
+.rev-bar-fill { height: 100%; border-radius: 4px; transition: width .5s ease; }
+.rev-targets { display: flex; gap: 8px; margin-top: 4px; }
+.rev-target { font-size: 10px; color: var(--text3); }
+.rev-target span { font-weight: 500; }
+
+/* RISK */
+.risk-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 8px;
+}
+.risk-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.risk-title { font-size: 13px; font-weight: 500; flex: 1; }
+.risk-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.rb-high { background: rgba(231,76,60,0.2); color: var(--red); }
+.rb-med { background: rgba(243,156,18,0.2); color: var(--amber); }
+.rb-low { background: rgba(46,204,113,0.2); color: var(--green); }
+.risk-detail { font-size: 11px; color: var(--text3); line-height: 1.5; }
+
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 400px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: modalIn .2s ease;
+}
+@keyframes modalIn { from { opacity: 0; transform: scale(.95); } to { opacity: 1; transform: scale(1); } }
+.modal-close {
+  float: right;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  margin: -6px -6px 0 0;
+}
+.modal-name {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+.modal-title { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.modal-reports { font-size: 12px; color: var(--text3); margin-bottom: 4px; }
+.modal-salary { font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+.modal-section { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: var(--text3); font-weight: 600; margin-bottom: 8px; }
+.modal-list { list-style: none; }
+.modal-list li {
+  font-size: 13px;
+  color: var(--text2);
+  padding: 4px 0 4px 14px;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.modal-list li:last-child { border-bottom: none; }
+.modal-list li::before { content: '—'; position: absolute; left: 0; color: var(--text3); }
+
+/* OVERVIEW HERO */
+.hero {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 36px;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: 'TGF';
+  position: absolute;
+  right: -20px;
+  top: -10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 160px;
+  color: rgba(201,168,76,0.04);
+  letter-spacing: 8px;
+  pointer-events: none;
+  line-height: 1;
+}
+.hero-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.hero-sub { font-size: 14px; color: var(--text2); max-width: 500px; line-height: 1.7; }
+.hero-stats { display: flex; gap: 32px; margin-top: 24px; flex-wrap: wrap; }
+.hero-stat-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  color: var(--text);
+  line-height: 1;
+}
+.hero-stat-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+/* TABLE */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border2);
+  font-weight: 600;
+}
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+  vertical-align: middle;
+}
+.data-table td:first-child { color: var(--text); font-weight: 500; }
+.data-table tr:hover td { background: var(--surface2); }
+
+/* SECTION LABEL */
+.sub-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  font-weight: 600;
+  margin: 24px 0 12px;
+}
+.divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+/* ALERT */
+.alert {
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  border-left: 3px solid;
+}
+.alert-warn { background: rgba(243,156,18,0.08); border-color: var(--amber); color: var(--amber); }
+.alert-danger { background: rgba(231,76,60,0.08); border-color: var(--red); color: var(--red); }
+.alert-success { background: rgba(46,204,113,0.08); border-color: var(--green); color: var(--green); }
+
+/* CHANNEL CARD */
+.channel-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.channel-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.channel-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+.channel-status {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: .5px;
+}
+.cs-live { background: var(--green-bg); color: var(--green); }
+.cs-soon { background: rgba(243,156,18,0.15); color: var(--amber); }
+.cs-dev { background: var(--blue-bg); color: var(--blue); }
+
+/* PROGRESS */
+.progress-wrap { margin-bottom: 6px; }
+.progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+.progress-track { background: var(--surface3); border-radius: 3px; height: 5px; }
+.progress-fill { height: 100%; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">TGF GROUP</div>
+    <div class="sub">Company Dashboard</div>
+  </div>
+
+  <div class="nav-section">Overview</div>
+  <a class="nav-item active" onclick="showSection('overview',this)">
+    <div class="nav-dot" style="background:var(--gold)"></div>
+    Overview
+  </a>
+
+  <div class="nav-section">Structure</div>
+  <a class="nav-item" onclick="showSection('org',this)">
+    <div class="nav-dot" style="background:var(--blue)"></div>
+    Org Chart
+  </a>
+  <a class="nav-item" onclick="showSection('hires',this)">
+    <div class="nav-dot" style="background:var(--red)"></div>
+    Hire Tracker
+  </a>
+
+  <div class="nav-section">Financials</div>
+  <a class="nav-item" onclick="showSection('costs',this)">
+    <div class="nav-dot" style="background:var(--green)"></div>
+    Staff Costs
+  </a>
+  <a class="nav-item" onclick="showSection('revenue',this)">
+    <div class="nav-dot" style="background:var(--amber)"></div>
+    Revenue Targets
+  </a>
+
+  <div class="nav-section">Operations</div>
+  <a class="nav-item" onclick="showSection('channels',this)">
+    <div class="nav-dot" style="background:var(--purple)"></div>
+    Channels
+  </a>
+  <a class="nav-item" onclick="showSection('milestones',this)">
+    <div class="nav-dot" style="background:var(--tgfbro)"></div>
+    Milestones
+  </a>
+  <a class="nav-item" onclick="showSection('risks',this)">
+    <div class="nav-dot" style="background:var(--red)"></div>
+    Risk Register
+  </a>
+
+  <div class="sidebar-footer">
+    v1.0 — April 2026<br>Confidential · Blood Brother Media
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+<!-- OVERVIEW -->
+<div class="section active" id="s-overview">
+  <div class="hero">
+    <div class="hero-title">TGF GROUP</div>
+    <div class="hero-sub">The UK's leading multi-channel creator media company. Built around TGFbro's 6M subscriber comeback, expanding across 6 channels and multiple auxiliary brands under Blood Brother Media management.</div>
+    <div class="hero-stats">
+      <div><div class="hero-stat-val" style="color:var(--gold)">6M+</div><div class="hero-stat-lbl">Subscribers</div></div>
+      <div><div class="hero-stat-val">£15K</div><div class="hero-stat-lbl">Monthly AdSense</div></div>
+      <div><div class="hero-stat-val">£30K</div><div class="hero-stat-lbl">WhatNot Deal</div></div>
+      <div><div class="hero-stat-val">20%</div><div class="hero-stat-lbl">BBM Revenue Share</div></div>
+      <div><div class="hero-stat-val">6</div><div class="hero-stat-lbl">Channels Planned</div></div>
+      <div><div class="hero-stat-val" id="ov-headcount">16</div><div class="hero-stat-lbl">Current Headcount</div></div>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total staff cost / mo</div>
+      <div class="stat-value sv-gold">£156,800</div>
+      <div class="stat-sub">Fully staffed, inc. NI & pension</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Already covered by BBM</div>
+      <div class="stat-value sv-green">~£88K</div>
+      <div class="stat-sub">Existing team salary value</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">New hire cost needed</div>
+      <div class="stat-value sv-red">~£40K</div>
+      <div class="stat-sub">6 strategic hires remaining</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Revenue to cover hires</div>
+      <div class="stat-value sv-blue">£200K</div>
+      <div class="stat-sub">Gross / mo at 20% BBM share</div>
+    </div>
+  </div>
+
+  <div class="sub-label">BBM Contract Terms</div>
+  <div class="grid-2" style="margin-bottom:24px">
+    <div class="card">
+      <div class="card-title">Blood Brother Media Agreement</div>
+      <div class="card-sub" style="margin-top:10px;line-height:1.8">
+        <strong style="color:var(--text)">Revenue share:</strong> 20% of gross revenue across all projects<br>
+        <strong style="color:var(--text)">Term:</strong> 3 years<br>
+        <strong style="color:var(--text)">Year 1:</strong> Full service — management + creative<br>
+        <strong style="color:var(--text)">Year 2+:</strong> Strategic management only. TGFbro hires own creative team.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Current Revenue Baseline</div>
+      <div class="card-sub" style="margin-top:10px;line-height:1.8">
+        <strong style="color:var(--gold)">£15,000/mo</strong> — YouTube AdSense (last 28 days)<br>
+        <strong style="color:var(--gold)">£30,000</strong> — WhatNot sponsorship + First Time Buyer bonus<br>
+        <strong style="color:var(--green)">£3,000/mo</strong> — BBM's current 20% share floor<br>
+        <strong style="color:var(--text3)">Target:</strong> £200,000/mo gross to fund full team
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-label">Active Projects Status</div>
+  <div class="grid-3">
+    <div class="card" style="border-left:3px solid var(--green);border-radius:0 10px 10px 0">
+      <span class="badge badge-gold" style="margin-bottom:8px">LIVE</span>
+      <div class="card-title">TGFbro</div>
+      <div class="card-sub">Relaunched. First video published, second ready.</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--amber);border-radius:0 10px 10px 0">
+      <span class="badge" style="background:rgba(243,156,18,0.15);color:var(--amber);margin-bottom:8px">IMMINENT</span>
+      <div class="card-title">Troof or Miff</div>
+      <div class="card-sub">Season 2 launching in weeks.</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--blue);border-radius:0 10px 10px 0">
+      <span class="badge badge-blue" style="margin-bottom:8px">IN DEV</span>
+      <div class="card-title">TGF Gaming</div>
+      <div class="card-sub">IP and brand identity established. Launching Month 3.</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--pink);border-radius:0 10px 10px 0">
+      <span class="badge badge-blue" style="margin-bottom:8px">PLANNED</span>
+      <div class="card-title">TGF Food</div>
+      <div class="card-sub">Concept ready. Hire #4 required before launch.</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--purple);border-radius:0 10px 10px 0">
+      <span class="badge badge-blue" style="margin-bottom:8px">PLANNED</span>
+      <div class="card-title">TGF Live</div>
+      <div class="card-sub">Twitch vs YouTube Live decision pending.</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--text3);border-radius:0 10px 10px 0">
+      <span class="badge badge-blue" style="margin-bottom:8px">PLANNED</span>
+      <div class="card-title">TGF Max</div>
+      <div class="card-sub">Subscription VOD platform. CTO hire prerequisite.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ORG CHART -->
+<div class="section" id="s-org">
+  <div class="section-header">
+    <div class="section-eyebrow">Company Structure</div>
+    <div class="section-title">ORG CHART</div>
+    <div class="section-desc">Click any role card to see full responsibilities. Green border = existing team. Red border = hire needed.</div>
+  </div>
+
+  <div class="cost-totals">
+    <div class="cost-card cc-all">
+      <div class="cc-val">£156,800</div>
+      <div class="cc-lbl">Total staff cost<br>fully staffed /mo</div>
+    </div>
+    <div class="cost-card cc-paid">
+      <div class="cc-val">~£88K</div>
+      <div class="cc-lbl">Current team<br>already paid by BBM</div>
+    </div>
+    <div class="cost-card cc-hire">
+      <div class="cc-val" id="hire-total-org">~£40K</div>
+      <div class="cc-lbl">Strategic hires<br>still needed /mo</div>
+    </div>
+  </div>
+
+  <div class="silo-tabs">
+    <button class="silo-tab active" style="background:var(--gold);border-color:var(--gold)" onclick="showSilo('core',this)">Core Team</button>
+    <button class="silo-tab" onclick="showSilo('tgfbro',this)" data-color="var(--tgfbro)">TGFbro</button>
+    <button class="silo-tab" onclick="showSilo('gaming',this)" data-color="var(--gaming)">TGF Gaming</button>
+    <button class="silo-tab" onclick="showSilo('tom',this)" data-color="var(--tom)">Troof or Miff</button>
+    <button class="silo-tab" onclick="showSilo('food',this)" data-color="var(--food)">TGF Food</button>
+  </div>
+
+  <!-- CORE SILO -->
+  <div id="silo-core" class="tree" style="gap:0">
+    <div onclick="openModal('ceo')" class="role-card founder" style="text-align:center;margin-bottom:0">
+      <div class="rc-name" style="background:rgba(201,168,76,.15);color:var(--gold)">DAN</div>
+      <div class="rc-title">Chief Executive Officer</div>
+      <div class="rc-reports">Reports to: Jay & Romell</div>
+      <div class="rc-salary" style="color:var(--gold)">£7,500/mo</div>
+      <div class="rc-paid-note">Already paid</div>
+    </div>
+    <div class="vline"></div>
+    <div class="branch-row">
+      <div class="branch-col">
+        <div onclick="openModal('cmo')" class="role-card paid">
+          <div class="rc-name" style="background:var(--blue-bg);color:var(--blue)">IZAAK</div>
+          <div class="rc-title">Chief Marketing Officer</div>
+          <div class="rc-reports">Reports to: CEO</div>
+          <div class="rc-salary" style="color:var(--green)">£6,250/mo</div>
+          <div class="rc-paid-note">Already paid</div>
+        </div>
+        <div class="vline"></div>
+        <div onclick="openModal('analytics')" class="role-card paid">
+          <div class="rc-name" style="background:var(--blue-bg);color:var(--blue)">IZAAK</div>
+          <div class="rc-title">Data & Analytics Manager</div>
+          <div class="rc-reports">Reports to: CMO</div>
+          <div class="rc-salary" style="color:var(--green)">£4,000/mo</div>
+          <div class="rc-paid-note">Already paid</div>
+        </div>
+      </div>
+      <div class="branch-col">
+        <div onclick="openModal('coo')" class="role-card paid">
+          <div class="rc-name" style="background:var(--blue-bg);color:var(--blue)">IZAAK</div>
+          <div class="rc-title">Chief Operating Officer</div>
+          <div class="rc-reports">Reports to: CEO</div>
+          <div class="rc-salary" style="color:var(--green)">£6,667/mo</div>
+          <div class="rc-paid-note">Already paid</div>
+        </div>
+        <div class="vline"></div>
+        <div class="branch-row">
+          <div onclick="openModal('hr')" class="role-card paid">
+            <div class="rc-name" style="background:var(--blue-bg);color:var(--blue)">ELLIE</div>
+            <div class="rc-title">HR Manager</div>
+            <div class="rc-reports">Reports to: COO</div>
+            <div class="rc-salary" style="color:var(--green)">£3,500/mo</div>
+            <div class="rc-paid-note">Already paid</div>
+          </div>
+          <div onclick="openModal('spm')" class="role-card paid">
+            <div class="rc-name" style="background:var(--blue-bg);color:var(--blue)">DAN</div>
+            <div class="rc-title">Senior Project Manager</div>
+            <div class="rc-reports">Reports to: COO</div>
+            <div class="rc-salary" style="color:var(--green)">£4,333/mo</div>
+            <div class="rc-paid-note">Already paid</div>
+          </div>
+          <div onclick="openModal('talent')" class="role-card paid">
+            <div class="rc-name" style="background:var(--blue-bg);color:var(--blue)">ABBEY</div>
+            <div class="rc-title">Talent Manager</div>
+            <div class="rc-reports">Reports to: COO</div>
+            <div class="rc-salary" style="color:var(--green)">£4,000/mo</div>
+            <div class="rc-paid-note">Already paid</div>
+          </div>
+          <div onclick="openModal('finance')" class="role-card hire">
+            <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #6</div>
+            <div class="rc-title">Finance Manager</div>
+            <div class="rc-reports">Reports to: COO</div>
+            <div class="rc-salary" style="color:var(--red)">£4,333/mo</div>
+          </div>
+        </div>
+      </div>
+      <div onclick="openModal('cto')" class="role-card hire">
+        <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #5</div>
+        <div class="rc-title">Chief Technology Officer</div>
+        <div class="rc-reports">Reports to: CEO</div>
+        <div class="rc-salary" style="color:var(--red)">£7,083/mo</div>
+      </div>
+      <div onclick="openModal('hbd')" class="role-card paid">
+        <div class="rc-name" style="background:var(--blue-bg);color:var(--blue)">DAN</div>
+        <div class="rc-title">Head of Business Dev</div>
+        <div class="rc-reports">Reports to: CEO</div>
+        <div class="rc-salary" style="color:var(--green)">£5,417/mo</div>
+        <div class="rc-paid-note">Already paid</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TGFBRO SILO -->
+  <div id="silo-tgfbro" class="tree" style="display:none;gap:0">
+    <div onclick="openModal('tgfbro-cm')" class="role-card silo-top" style="--silo-color:var(--tgfbro);text-align:center">
+      <div class="rc-name" style="background:rgba(124,111,205,.15);color:var(--tgfbro)">JT</div>
+      <div class="rc-title">Channel Manager</div>
+      <div class="rc-reports">Reports to: COO / Senior PM</div>
+      <div class="rc-salary" style="color:var(--green)">£4,000/mo</div>
+      <div class="rc-paid-note">Already paid</div>
+    </div>
+    <div class="vline"></div>
+    <div class="branch-row">
+      <div class="branch-col">
+        <div onclick="openModal('tgfbro-smm')" class="role-card hire" style="border-top:3px solid var(--tgfbro);border-radius:0 0 10px 0">
+          <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #3</div>
+          <div class="rc-title">Social Media Manager</div>
+          <div class="rc-reports">Reports to: Channel Manager</div>
+          <div class="rc-salary" style="color:var(--red)">£2,500/mo</div>
+        </div>
+        <div class="vline"></div>
+        <div onclick="openModal('tgfbro-sfe')" class="role-card silo-top" style="--silo-color:var(--tgfbro)">
+          <div class="rc-name" style="background:rgba(124,111,205,.15);color:var(--tgfbro)">JAYRON</div>
+          <div class="rc-title">Short-Form Editor</div>
+          <div class="rc-reports">Reports to: Social Media Mgr</div>
+          <div class="rc-salary" style="color:var(--green)">£2,667/mo</div>
+          <div class="rc-paid-note">Already paid</div>
+        </div>
+      </div>
+      <div class="branch-col">
+        <div onclick="openModal('tgfbro-hop')" class="role-card silo-top" style="--silo-color:var(--tgfbro)">
+          <div class="rc-name" style="background:rgba(124,111,205,.15);color:var(--tgfbro)">THIERRY</div>
+          <div class="rc-title">Head of Production</div>
+          <div class="rc-reports">Reports to: Channel Manager</div>
+          <div class="rc-salary" style="color:var(--green)">£4,333/mo</div>
+          <div class="rc-paid-note">Already paid</div>
+        </div>
+        <div class="vline"></div>
+        <div class="branch-row">
+          <div onclick="openModal('tgfbro-sve')" class="role-card silo-top" style="--silo-color:var(--tgfbro)">
+            <div class="rc-name" style="background:rgba(124,111,205,.15);color:var(--tgfbro)">THIERRY</div>
+            <div class="rc-title">Senior Video Editor</div>
+            <div class="rc-reports">Reports to: Head of Production</div>
+            <div class="rc-salary" style="color:var(--green)">£3,500/mo</div>
+            <div class="rc-paid-note">Already paid</div>
+          </div>
+          <div onclick="openModal('tgfbro-2ve')" class="role-card hire" style="border-top:3px solid var(--tgfbro);border-radius:0 0 10px 0">
+            <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #2</div>
+            <div class="rc-title">Second Video Editor</div>
+            <div class="rc-reports">Reports to: Head of Production</div>
+            <div class="rc-salary" style="color:var(--red)">£3,000/mo</div>
+          </div>
+          <div onclick="openModal('tgfbro-vc')" class="role-card silo-top" style="--silo-color:var(--tgfbro)">
+            <div class="rc-name" style="background:rgba(124,111,205,.15);color:var(--tgfbro)">THIERRY</div>
+            <div class="rc-title">Videographer</div>
+            <div class="rc-reports">Reports to: Head of Production</div>
+            <div class="rc-salary" style="color:var(--green)">£3,167/mo</div>
+            <div class="rc-paid-note">Already paid</div>
+          </div>
+        </div>
+      </div>
+      <div onclick="openModal('tgfbro-td')" class="role-card hire" style="border-top:3px solid var(--tgfbro);border-radius:0 0 10px 0">
+        <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #1</div>
+        <div class="rc-title">Thumbnail Designer</div>
+        <div class="rc-reports">Reports to: Channel Manager</div>
+        <div class="rc-salary" style="color:var(--red)">£2,500/mo</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAMING SILO -->
+  <div id="silo-gaming" class="tree" style="display:none;gap:0">
+    <div onclick="openModal('gaming-cm')" class="role-card silo-top" style="--silo-color:var(--gaming);text-align:center">
+      <div class="rc-name" style="background:rgba(39,174,96,.15);color:var(--gaming)">LINDAN</div>
+      <div class="rc-title">Channel Manager</div>
+      <div class="rc-reports">Reports to: COO / Senior PM</div>
+      <div class="rc-salary" style="color:var(--green)">£3,750/mo</div>
+      <div class="rc-paid-note">Already paid</div>
+    </div>
+    <div class="vline"></div>
+    <div class="branch-row">
+      <div class="branch-col">
+        <div onclick="openModal('gaming-smm')" class="role-card hire" style="border-top:3px solid var(--gaming);border-radius:0 0 10px 0">
+          <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #3</div>
+          <div class="rc-title">Social Media Manager</div>
+          <div class="rc-reports">Reports to: Channel Manager</div>
+          <div class="rc-salary" style="color:var(--red)">£2,500/mo</div>
+        </div>
+        <div class="vline"></div>
+        <div onclick="openModal('gaming-sfe')" class="role-card silo-top" style="--silo-color:var(--gaming)">
+          <div class="rc-name" style="background:rgba(39,174,96,.15);color:var(--gaming)">JAYRON</div>
+          <div class="rc-title">Short-Form Editor</div>
+          <div class="rc-reports">Reports to: Social Media Mgr</div>
+          <div class="rc-salary" style="color:var(--green)">£2,500/mo</div>
+          <div class="rc-paid-note">Already paid</div>
+        </div>
+      </div>
+      <div onclick="openModal('gaming-sve')" class="role-card silo-top" style="--silo-color:var(--gaming)">
+        <div class="rc-name" style="background:rgba(39,174,96,.15);color:var(--gaming)">LINDAN</div>
+        <div class="rc-title">Senior Video Editor</div>
+        <div class="rc-reports">Reports to: Channel Manager</div>
+        <div class="rc-salary" style="color:var(--green)">£3,000/mo</div>
+        <div class="rc-paid-note">Already paid</div>
+      </div>
+      <div onclick="openModal('gaming-td')" class="role-card hire" style="border-top:3px solid var(--gaming);border-radius:0 0 10px 0">
+        <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #1</div>
+        <div class="rc-title">Thumbnail Designer</div>
+        <div class="rc-reports">Reports to: Channel Manager</div>
+        <div class="rc-salary" style="color:var(--red)">£2,500/mo</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOM SILO -->
+  <div id="silo-tom" class="tree" style="display:none;gap:0">
+    <div onclick="openModal('tom-cm')" class="role-card silo-top" style="--silo-color:var(--tom);text-align:center">
+      <div class="rc-name" style="background:rgba(230,126,34,.15);color:var(--tom)">ELLIE</div>
+      <div class="rc-title">Channel Manager</div>
+      <div class="rc-reports">Reports to: COO / Senior PM</div>
+      <div class="rc-salary" style="color:var(--green)">£3,750/mo</div>
+      <div class="rc-paid-note">Already paid</div>
+    </div>
+    <div class="vline"></div>
+    <div class="branch-row">
+      <div onclick="openModal('tom-ve')" class="role-card silo-top" style="--silo-color:var(--tom)">
+        <div class="rc-name" style="background:rgba(230,126,34,.15);color:var(--tom)">JOSH TGF</div>
+        <div class="rc-title">Video Editor</div>
+        <div class="rc-reports">Reports to: Channel Manager</div>
+        <div class="rc-salary" style="color:var(--green)">£2,833/mo</div>
+        <div class="rc-paid-note">Already paid</div>
+      </div>
+      <div class="branch-col">
+        <div onclick="openModal('tom-sp')" class="role-card silo-top" style="--silo-color:var(--tom)">
+          <div class="rc-name" style="background:rgba(230,126,34,.15);color:var(--tom)">ABBEY</div>
+          <div class="rc-title">Show Producer</div>
+          <div class="rc-reports">Reports to: Channel Manager</div>
+          <div class="rc-salary" style="color:var(--green)">£3,750/mo</div>
+          <div class="rc-paid-note">Already paid</div>
+        </div>
+        <div class="vline"></div>
+        <div class="branch-row">
+          <div onclick="openModal('tom-vc1')" class="role-card silo-top" style="--silo-color:var(--tom)">
+            <div class="rc-name" style="background:rgba(230,126,34,.15);color:var(--tom)">JOSH TGF</div>
+            <div class="rc-title">Videographer</div>
+            <div class="rc-reports">Reports to: Show Producer</div>
+            <div class="rc-salary" style="color:var(--green)">£3,000/mo</div>
+            <div class="rc-paid-note">Already paid</div>
+          </div>
+          <div onclick="openModal('tom-vc2')" class="role-card silo-top" style="--silo-color:var(--tom)">
+            <div class="rc-name" style="background:rgba(230,126,34,.15);color:var(--tom)">LINDAN</div>
+            <div class="rc-title">Videographer</div>
+            <div class="rc-reports">Reports to: Show Producer</div>
+            <div class="rc-salary" style="color:var(--green)">£3,000/mo</div>
+            <div class="rc-paid-note">Already paid</div>
+          </div>
+        </div>
+      </div>
+      <div class="branch-col">
+        <div onclick="openModal('tom-smm')" class="role-card hire" style="border-top:3px solid var(--tom);border-radius:0 0 10px 0">
+          <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #3</div>
+          <div class="rc-title">Social Media Manager</div>
+          <div class="rc-reports">Reports to: Channel Manager</div>
+          <div class="rc-salary" style="color:var(--red)">£2,500/mo</div>
+        </div>
+        <div class="vline"></div>
+        <div onclick="openModal('tom-sfe')" class="role-card silo-top" style="--silo-color:var(--tom)">
+          <div class="rc-name" style="background:rgba(230,126,34,.15);color:var(--tom)">JAYRON</div>
+          <div class="rc-title">Short-Form Editor</div>
+          <div class="rc-reports">Reports to: Social Media Mgr</div>
+          <div class="rc-salary" style="color:var(--green)">£2,500/mo</div>
+          <div class="rc-paid-note">Already paid</div>
+        </div>
+      </div>
+      <div onclick="openModal('tom-td')" class="role-card hire" style="border-top:3px solid var(--tom);border-radius:0 0 10px 0">
+        <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #1</div>
+        <div class="rc-title">Thumbnail Designer</div>
+        <div class="rc-reports">Reports to: Channel Manager</div>
+        <div class="rc-salary" style="color:var(--red)">£2,500/mo</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOD SILO -->
+  <div id="silo-food" class="tree" style="display:none;gap:0">
+    <div onclick="openModal('food-cm')" class="role-card hire" style="border-top:3px solid var(--food);border-radius:0 0 10px 0;text-align:center">
+      <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #4</div>
+      <div class="rc-title">Channel Manager</div>
+      <div class="rc-reports">Reports to: COO / Senior PM</div>
+      <div class="rc-salary" style="color:var(--red)">£4,000/mo</div>
+    </div>
+    <div class="vline"></div>
+    <div class="branch-row">
+      <div class="branch-col">
+        <div onclick="openModal('food-hop')" class="role-card silo-top" style="--silo-color:var(--food)">
+          <div class="rc-name" style="background:rgba(233,30,140,.15);color:var(--food)">THIERRY</div>
+          <div class="rc-title">Head of Production</div>
+          <div class="rc-reports">Reports to: Channel Manager</div>
+          <div class="rc-salary" style="color:var(--green)">£4,333/mo</div>
+          <div class="rc-paid-note">Already paid</div>
+        </div>
+        <div class="vline"></div>
+        <div class="branch-row">
+          <div onclick="openModal('food-sve')" class="role-card hire" style="border-top:3px solid var(--food);border-radius:0 0 10px 0">
+            <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #2</div>
+            <div class="rc-title">Senior Video Editor</div>
+            <div class="rc-reports">Reports to: Head of Production</div>
+            <div class="rc-salary" style="color:var(--red)">£3,000/mo</div>
+          </div>
+          <div onclick="openModal('food-vc')" class="role-card hire" style="border-top:3px solid var(--food);border-radius:0 0 10px 0">
+            <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #2</div>
+            <div class="rc-title">Videographer</div>
+            <div class="rc-reports">Reports to: Head of Production</div>
+            <div class="rc-salary" style="color:var(--red)">£3,000/mo</div>
+          </div>
+        </div>
+      </div>
+      <div class="branch-col">
+        <div onclick="openModal('food-smm')" class="role-card hire" style="border-top:3px solid var(--food);border-radius:0 0 10px 0">
+          <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #3</div>
+          <div class="rc-title">Social Media Manager</div>
+          <div class="rc-reports">Reports to: Channel Manager</div>
+          <div class="rc-salary" style="color:var(--red)">£2,500/mo</div>
+        </div>
+        <div class="vline"></div>
+        <div onclick="openModal('food-sfe')" class="role-card silo-top" style="--silo-color:var(--food)">
+          <div class="rc-name" style="background:rgba(233,30,140,.15);color:var(--food)">JAYRON</div>
+          <div class="rc-title">Short-Form Editor</div>
+          <div class="rc-reports">Reports to: Social Media Mgr</div>
+          <div class="rc-salary" style="color:var(--green)">£2,500/mo</div>
+          <div class="rc-paid-note">Already paid</div>
+        </div>
+      </div>
+      <div onclick="openModal('food-td')" class="role-card hire" style="border-top:3px solid var(--food);border-radius:0 0 10px 0">
+        <div class="rc-name" style="background:var(--red-bg);color:var(--red)">HIRE #1</div>
+        <div class="rc-title">Thumbnail Designer</div>
+        <div class="rc-reports">Reports to: Channel Manager</div>
+        <div class="rc-salary" style="color:var(--red)">£2,500/mo</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HIRE TRACKER -->
+<div class="section" id="s-hires">
+  <div class="section-header">
+    <div class="section-eyebrow">Recruitment</div>
+    <div class="section-title">HIRE TRACKER</div>
+    <div class="section-desc">Toggle each hire as filled to track progress. Costs update in real time.</div>
+  </div>
+  <div class="cost-totals">
+    <div class="cost-card cc-all"><div class="cc-val" id="ht-total">£40,416</div><div class="cc-lbl">Total new hire cost<br>/mo when all filled</div></div>
+    <div class="cost-card cc-hire"><div class="cc-val" id="ht-remaining">£40,416</div><div class="cc-lbl">Remaining new hire<br>cost still needed</div></div>
+    <div class="cost-card cc-paid"><div class="cc-val" id="ht-filled">£0</div><div class="cc-lbl">Filled hire cost<br>now being paid</div></div>
+  </div>
+  <div id="hire-list">
+    <div class="hire-row" data-salary="2500" data-id="h1">
+      <div class="hire-num">#1</div>
+      <div class="hire-info">
+        <div class="hire-title">Thumbnail Designer</div>
+        <div class="hire-detail">Shared across TGFbro, Gaming, Troof or Miff & TGF Food — 1 person, 4 silos</div>
+      </div>
+      <div class="hire-salary">£2,500/mo</div>
+      <div class="hire-toggle" onclick="toggleHire(this)"></div>
+    </div>
+    <div class="hire-row" data-salary="3000" data-id="h2a">
+      <div class="hire-num">#2A</div>
+      <div class="hire-info">
+        <div class="hire-title">Second Video Editor — TGFbro</div>
+        <div class="hire-detail">Most urgent hire — relieves Thierry's triple role overload</div>
+      </div>
+      <div class="hire-salary">£3,000/mo</div>
+      <div class="hire-toggle" onclick="toggleHire(this)"></div>
+    </div>
+    <div class="hire-row" data-salary="3000" data-id="h2b">
+      <div class="hire-num">#2B</div>
+      <div class="hire-info">
+        <div class="hire-title">Senior Video Editor + Videographer — TGF Food</div>
+        <div class="hire-detail">Two separate people needed before TGF Food can produce content</div>
+      </div>
+      <div class="hire-salary">£3,000/mo</div>
+      <div class="hire-toggle" onclick="toggleHire(this)"></div>
+    </div>
+    <div class="hire-row" data-salary="2500" data-id="h3">
+      <div class="hire-num">#3</div>
+      <div class="hire-info">
+        <div class="hire-title">Social Media Manager</div>
+        <div class="hire-detail">Shared across TGFbro, Gaming, Troof or Miff & TGF Food — 1 person, 4 silos</div>
+      </div>
+      <div class="hire-salary">£2,500/mo</div>
+      <div class="hire-toggle" onclick="toggleHire(this)"></div>
+    </div>
+    <div class="hire-row" data-salary="4000" data-id="h4">
+      <div class="hire-num">#4</div>
+      <div class="hire-info">
+        <div class="hire-title">Channel Manager — TGF Food</div>
+        <div class="hire-detail">Must be secured before any TGF Food content is produced</div>
+      </div>
+      <div class="hire-salary">£4,000/mo</div>
+      <div class="hire-toggle" onclick="toggleHire(this)"></div>
+    </div>
+    <div class="hire-row" data-salary="7083" data-id="h5">
+      <div class="hire-num">#5</div>
+      <div class="hire-info">
+        <div class="hire-title">Chief Technology Officer</div>
+        <div class="hire-detail">Prerequisite for TGF Max platform build</div>
+      </div>
+      <div class="hire-salary">£7,083/mo</div>
+      <div class="hire-toggle" onclick="toggleHire(this)"></div>
+    </div>
+    <div class="hire-row" data-salary="4333" data-id="h6">
+      <div class="hire-num">#6</div>
+      <div class="hire-info">
+        <div class="hire-title">Finance Manager</div>
+        <div class="hire-detail">Needed as revenue and headcount scales beyond current BBM capacity</div>
+      </div>
+      <div class="hire-salary">£4,333/mo</div>
+      <div class="hire-toggle" onclick="toggleHire(this)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- STAFF COSTS -->
+<div class="section" id="s-costs">
+  <div class="section-header">
+    <div class="section-eyebrow">Financials</div>
+    <div class="section-title">STAFF COSTS</div>
+    <div class="section-desc">Full salary breakdown across all roles. Monthly cost to company includes 13.8% employer NI and 5% pension.</div>
+  </div>
+  <div class="cost-totals">
+    <div class="cost-card cc-all"><div class="cc-val">£156,800</div><div class="cc-lbl">Total cost to company<br>fully staffed /mo</div></div>
+    <div class="cost-card cc-paid"><div class="cc-val">~£88K</div><div class="cc-lbl">Current BBM team<br>already being paid</div></div>
+    <div class="cost-card cc-hire"><div class="cc-val">~£40K</div><div class="cc-lbl">New hires<br>still needed /mo</div></div>
+  </div>
+  <div class="sub-label">Central Team</div>
+  <table class="data-table" style="margin-bottom:24px">
+    <thead><tr><th>Role</th><th>Person</th><th>Annual Salary</th><th>Monthly Salary</th><th>Cost to Co./mo</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Chief Executive Officer</td><td>Dan</td><td>£90,000</td><td>£7,500</td><td>£9,188</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>Head of Business Development</td><td>Dan</td><td>£65,000</td><td>£5,417</td><td>£6,635</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>Senior Project Manager</td><td>Dan</td><td>£52,000</td><td>£4,333</td><td>£5,308</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>Chief Operating Officer</td><td>Izaak</td><td>£80,000</td><td>£6,667</td><td>£8,167</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>Chief Marketing Officer</td><td>Izaak</td><td>£75,000</td><td>£6,250</td><td>£7,656</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>Data & Analytics Manager</td><td>Izaak</td><td>£48,000</td><td>£4,000</td><td>£4,900</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>HR Manager</td><td>Ellie</td><td>£42,000</td><td>£3,500</td><td>£4,288</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>Talent Manager</td><td>Abbey</td><td>£48,000</td><td>£4,000</td><td>£4,900</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>Chief Technology Officer</td><td>—</td><td>£85,000</td><td>£7,083</td><td>£8,677</td><td><span class="badge badge-hire">Hire #5</span></td></tr>
+      <tr><td>Finance Manager</td><td>—</td><td>£52,000</td><td>£4,333</td><td>£5,308</td><td><span class="badge badge-hire">Hire #6</span></td></tr>
+    </tbody>
+  </table>
+  <div class="sub-label">TGFbro Silo</div>
+  <table class="data-table" style="margin-bottom:24px">
+    <thead><tr><th>Role</th><th>Person</th><th>Monthly Salary</th><th>Cost to Co./mo</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Channel Manager</td><td>JT</td><td>£4,000</td><td>£4,900</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>Head of Production</td><td>Thierry</td><td>£4,333</td><td>£5,308</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>Senior Video Editor</td><td>Thierry</td><td>£3,500</td><td>£4,288</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>Videographer</td><td>Thierry</td><td>£3,167</td><td>£3,879</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>Short-Form Editor</td><td>Jayron</td><td>£2,667</td><td>£3,267</td><td><span class="badge badge-paid">Already paid</span></td></tr>
+      <tr><td>Second Video Editor</td><td>—</td><td>£3,000</td><td>£3,675</td><td><span class="badge badge-hire">Hire #2</span></td></tr>
+      <tr><td>Social Media Manager</td><td>—</td><td>£2,500</td><td>£3,063</td><td><span class="badge badge-hire">Hire #3</span></td></tr>
+      <tr><td>Thumbnail Designer</td><td>—</td><td>£2,500</td><td>£3,063</td><td><span class="badge badge-hire">Hire #1</span></td></tr>
+    </tbody>
+  </table>
+  <div class="alert alert-warn">Note: Hire #1, #2 and #3 appear across multiple silos but represent single people covering multiple channels short-term. The salary cost shown per silo is the value of that role, not an additional hire per instance.</div>
+</div>
+
+<!-- REVENUE TARGETS -->
+<div class="section" id="s-revenue">
+  <div class="section-header">
+    <div class="section-eyebrow">Financials</div>
+    <div class="section-title">REVENUE TARGETS</div>
+    <div class="section-desc">Current baseline vs breakeven, sustainable and idealistic targets per channel.</div>
+  </div>
+  <div class="stat-grid" style="margin-bottom:28px">
+    <div class="stat-card"><div class="stat-label">Current AdSense /mo</div><div class="stat-value sv-gold">£15K</div><div class="stat-sub">TGFbro only, last 28 days</div></div>
+    <div class="stat-card"><div class="stat-label">WhatNot deal secured</div><div class="stat-value sv-gold">£30K</div><div class="stat-sub">+ First Time Buyer bonus</div></div>
+    <div class="stat-card"><div class="stat-label">BBM 20% floor today</div><div class="stat-value sv-green">£3K</div><div class="stat-sub">From AdSense alone</div></div>
+    <div class="stat-card"><div class="stat-label">Revenue gap to fund hires</div><div class="stat-value sv-red">£197K</div><div class="stat-sub">£200K target minus current</div></div>
+  </div>
+  <div class="sub-label">Per Channel Revenue Thresholds</div>
+  <div id="rev-channels">
+    <div class="channel-card">
+      <div class="channel-card-header">
+        <div class="channel-name" style="color:var(--tgfbro)">TGFBRO</div>
+        <span class="channel-status cs-live">Live</span>
+      </div>
+      <div class="rev-row"><div class="rev-channel"><span>Monthly AdSense</span><span style="color:var(--gold)">£15,000 current</span></div><div class="rev-bar-bg"><div class="rev-bar-fill" style="width:30%;background:var(--gold)"></div></div><div class="rev-targets"><span class="rev-target">Breakeven: <span>£25K</span></span><span class="rev-target">Sustainable: <span>£50K</span></span><span class="rev-target">Idealistic: <span>£100K+</span></span></div></div>
+      <div class="rev-row"><div class="rev-channel"><span>Sponsorships</span><span style="color:var(--gold)">£30K WhatNot benchmark</span></div><div class="rev-bar-bg"><div class="rev-bar-fill" style="width:40%;background:var(--purple)"></div></div><div class="rev-targets"><span class="rev-target">Target: <span>2–3 deals/mo</span></span><span class="rev-target">Value: <span>£20K–£50K/deal</span></span></div></div>
+    </div>
+    <div class="channel-card">
+      <div class="channel-card-header">
+        <div class="channel-name" style="color:var(--tom)">TROOF OR MIFF</div>
+        <span class="channel-status cs-soon">Season 2 Soon</span>
+      </div>
+      <div class="rev-row"><div class="rev-channel"><span>AdSense target</span><span>£0 current</span></div><div class="rev-bar-bg"><div class="rev-bar-fill" style="width:0%;background:var(--tom)"></div></div><div class="rev-targets"><span class="rev-target">Breakeven: <span>£8K/mo</span></span><span class="rev-target">Sustainable: <span>£20K/mo</span></span><span class="rev-target">Idealistic: <span>£50K/mo</span></span></div></div>
+    </div>
+    <div class="channel-card">
+      <div class="channel-card-header">
+        <div class="channel-name" style="color:var(--gaming)">TGF GAMING</div>
+        <span class="channel-status cs-dev">Month 3 Launch</span>
+      </div>
+      <div class="rev-row"><div class="rev-channel"><span>AdSense target</span><span>£0 current</span></div><div class="rev-bar-bg"><div class="rev-bar-fill" style="width:0%;background:var(--gaming)"></div></div><div class="rev-targets"><span class="rev-target">Breakeven: <span>£10K/mo</span></span><span class="rev-target">Sustainable: <span>£25K/mo</span></span><span class="rev-target">Idealistic: <span>£60K/mo</span></span></div></div>
+    </div>
+    <div class="channel-card">
+      <div class="channel-card-header">
+        <div class="channel-name" style="color:var(--food)">TGF FOOD</div>
+        <span class="channel-status cs-dev">Hire #4 First</span>
+      </div>
+      <div class="rev-row"><div class="rev-channel"><span>AdSense target</span><span>£0 current</span></div><div class="rev-bar-bg"><div class="rev-bar-fill" style="width:0%;background:var(--food)"></div></div><div class="rev-targets"><span class="rev-target">Breakeven: <span>£12K/mo</span></span><span class="rev-target">Sustainable: <span>£30K/mo</span></span><span class="rev-target">Idealistic: <span>£75K/mo</span></span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CHANNELS -->
+<div class="section" id="s-channels">
+  <div class="section-header">
+    <div class="section-eyebrow">Operations</div>
+    <div class="section-title">CHANNELS</div>
+    <div class="section-desc">Strategy, status and key metrics for each channel in the TGF Group ecosystem.</div>
+  </div>
+  <div class="grid-2">
+    <div class="channel-card" style="border-top:3px solid var(--tgfbro)">
+      <div class="channel-card-header"><div class="channel-name" style="color:var(--tgfbro)">TGFbro</div><span class="channel-status cs-live">Live</span></div>
+      <div style="font-size:12px;color:var(--text3);line-height:1.7">Entertainment, challenges, lifestyle. 6M subscribers. Relaunched after 3 year hiatus. Priority #1 channel. Jay Swingler & Romell Henry hosted.</div>
+      <div style="margin-top:12px"><div class="progress-wrap"><div class="progress-label"><span>AdSense vs £50K target</span><span>30%</span></div><div class="progress-track"><div class="progress-fill" style="width:30%;background:var(--tgfbro)"></div></div></div></div>
+    </div>
+    <div class="channel-card" style="border-top:3px solid var(--tom)">
+      <div class="channel-card-header"><div class="channel-name" style="color:var(--tom)">Troof or Miff</div><span class="channel-status cs-soon">Season 2 Imminent</span></div>
+      <div style="font-size:12px;color:var(--text3);line-height:1.7">Gameshow format. Season 2 launching imminently. Chloe, Jay and Romell hosted. Strong clip culture potential.</div>
+      <div style="margin-top:12px"><div class="progress-wrap"><div class="progress-label"><span>Launch readiness</span><span>85%</span></div><div class="progress-track"><div class="progress-fill" style="width:85%;background:var(--tom)"></div></div></div></div>
+    </div>
+    <div class="channel-card" style="border-top:3px solid var(--gaming)">
+      <div class="channel-card-header"><div class="channel-name" style="color:var(--gaming)">TGF Gaming</div><span class="channel-status cs-dev">Month 3</span></div>
+      <div style="font-size:12px;color:var(--text3);line-height:1.7">Trending and series-based gaming content. Lindan leading. Personality-driven rather than pure gameplay. High sponsorship potential.</div>
+      <div style="margin-top:12px"><div class="progress-wrap"><div class="progress-label"><span>Launch readiness</span><span>60%</span></div><div class="progress-track"><div class="progress-fill" style="width:60%;background:var(--gaming)"></div></div></div></div>
+    </div>
+    <div class="channel-card" style="border-top:3px solid var(--food)">
+      <div class="channel-card-header"><div class="channel-name" style="color:var(--food)">TGF Food</div><span class="channel-status cs-dev">Hire #4 First</span></div>
+      <div style="font-size:12px;color:var(--text3);line-height:1.7">Jay & Romell travel the world reviewing obscure and extraordinary food. Natural brand partnership play. Zero team assigned yet — highest risk silo.</div>
+      <div style="margin-top:12px"><div class="progress-wrap"><div class="progress-label"><span>Launch readiness</span><span>20%</span></div><div class="progress-track"><div class="progress-fill" style="width:20%;background:var(--food)"></div></div></div></div>
+    </div>
+    <div class="channel-card" style="border-top:3px solid var(--purple)">
+      <div class="channel-card-header"><div class="channel-name" style="color:var(--purple)">TGF Live</div><span class="channel-status cs-dev">Planned</span></div>
+      <div style="font-size:12px;color:var(--text3);line-height:1.7">Livestream show. Adin Ross / Kai Cenat format for UK audience. Platform decision (Twitch vs YouTube) pending. Strong clip and community revenue potential.</div>
+      <div style="margin-top:12px"><div class="progress-wrap"><div class="progress-label"><span>Launch readiness</span><span>15%</span></div><div class="progress-track"><div class="progress-fill" style="width:15%;background:var(--purple)"></div></div></div></div>
+    </div>
+    <div class="channel-card" style="border-top:3px solid var(--text3)">
+      <div class="channel-card-header"><div class="channel-name" style="color:var(--text2)">TGF Max</div><span class="channel-status cs-dev">Planned</span></div>
+      <div style="font-size:12px;color:var(--text3);line-height:1.7">Subscription VOD platform. Extended cuts, BTS, exclusives. Patreon vs Memberful vs custom platform TBD. CTO hire is a prerequisite.</div>
+      <div style="margin-top:12px"><div class="progress-wrap"><div class="progress-label"><span>Launch readiness</span><span>10%</span></div><div class="progress-track"><div class="progress-fill" style="width:10%;background:var(--text3)"></div></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MILESTONES -->
+<div class="section" id="s-milestones">
+  <div class="section-header">
+    <div class="section-eyebrow">Operations</div>
+    <div class="section-title">MILESTONES</div>
+    <div class="section-desc">Click the circle to mark a milestone as complete. Progress saves in your browser.</div>
+  </div>
+  <div id="milestone-list">
+    <div class="milestone-item"><div class="ms-phase">Month 1</div><div class="ms-content"><div class="ms-title">TGFbro relaunched and first video published</div><div class="ms-desc">Channel live, first video out, second video ready to schedule</div></div><div class="ms-check done" onclick="toggleMs(this)">✓</div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 1</div><div class="ms-content"><div class="ms-title">Core team structure confirmed and roles assigned</div><div class="ms-desc">All existing BBM team mapped to roles, hire priority order set</div></div><div class="ms-check done" onclick="toggleMs(this)">✓</div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 1</div><div class="ms-content"><div class="ms-title">Hire #1 recruited — Thumbnail Designer</div><div class="ms-desc">Shared across all four active silos immediately</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 1–2</div><div class="ms-content"><div class="ms-title">Hire #2 recruited — Second Video Editor (TGFbro)</div><div class="ms-desc">Most urgent hire — relieves Thierry's triple role overload</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 1–2</div><div class="ms-content"><div class="ms-title">Hire #3 recruited — Social Media Manager</div><div class="ms-desc">Shared across all four active silos immediately</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 2</div><div class="ms-content"><div class="ms-title">Troof or Miff Season 2 launched</div><div class="ms-desc">Full season live on YouTube, clip distribution running</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 3</div><div class="ms-content"><div class="ms-title">TGF Gaming soft launch</div><div class="ms-desc">Channel live, first 4 videos published, Lindan in full Channel Manager role</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 3</div><div class="ms-content"><div class="ms-title">First knowledge base research sprint complete</div><div class="ms-desc">All 10 knowledge base files populated in Claude Code</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 4</div><div class="ms-content"><div class="ms-title">TGFbro AdSense hits £25K/mo</div><div class="ms-desc">Upload cadence and sponsorship integrations driving growth</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 4</div><div class="ms-content"><div class="ms-title">Second major sponsorship deal closed</div><div class="ms-desc">Minimum £25K deal. Packaged as multi-channel ecosystem buy</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 5</div><div class="ms-content"><div class="ms-title">Hire #4 recruited — TGF Food Channel Manager</div><div class="ms-desc">Prerequisite before Food content production begins</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 6</div><div class="ms-content"><div class="ms-title">TGF Food launches</div><div class="ms-desc">First episode filmed and published. Travel logistics in place.</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 6</div><div class="ms-content"><div class="ms-title">TGF Live platform decision made and channel launched</div><div class="ms-desc">Twitch vs YouTube decision finalised. First stream live.</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 6</div><div class="ms-content"><div class="ms-title">Thierry transitions to Head of Production only</div><div class="ms-desc">Triple role resolved — editing and camera handed off to new hires</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 8</div><div class="ms-content"><div class="ms-title">TGF Max beta launch</div><div class="ms-desc">Platform built, first subscribers onboarded, content calendar live</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 9</div><div class="ms-content"><div class="ms-title">Total group revenue hits £75K/mo</div><div class="ms-desc">Combined AdSense + sponsorships + TGF Max across all channels</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Month 12</div><div class="ms-content"><div class="ms-title">Total group revenue hits £200K/mo</div><div class="ms-desc">Full hire plan unlocked. All 6 strategic hires in place.</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Year 2</div><div class="ms-content"><div class="ms-title">BBM transitions to strategic management only</div><div class="ms-desc">Creative services handed to TGFbro-employed staff. BBM margin improves.</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Year 2</div><div class="ms-content"><div class="ms-title">First auxiliary brand launched</div><div class="ms-desc">Product concept, manufacturer and first retail or e-commerce drop</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+    <div class="milestone-item"><div class="ms-phase">Year 3</div><div class="ms-content"><div class="ms-title">TGF Group is the benchmark UK creator media company</div><div class="ms-desc">6 channels active, TGF Max profitable, auxiliary brand generating revenue, investment conversations open</div></div><div class="ms-check" onclick="toggleMs(this)"></div></div>
+  </div>
+</div>
+
+<!-- RISK REGISTER -->
+<div class="section" id="s-risks">
+  <div class="section-header">
+    <div class="section-eyebrow">Operations</div>
+    <div class="section-title">RISK REGISTER</div>
+    <div class="section-desc">Identified risks with likelihood, impact and mitigation actions.</div>
+  </div>
+  <div class="alert alert-danger">3 HIGH risks require immediate attention — Thierry overload, Jayron overload, and TGF Food having zero existing team.</div>
+  <div id="risk-list">
+    <div class="risk-item"><div class="risk-header"><div class="risk-title">Thierry carrying 4 roles across 2 silos</div><span class="risk-badge rb-high">HIGH</span><span class="risk-badge rb-high">URGENT</span></div><div class="risk-detail"><strong>Impact:</strong> Single point of failure for TGFbro and TGF Food production. If Thierry is unavailable, both silos stop producing. <br><strong>Mitigation:</strong> Hire #2A (Second Video Editor) is the single most urgent hire. Must be resolved by Month 6 at latest.</div></div>
+    <div class="risk-item"><div class="risk-header"><div class="risk-title">Jayron covering Short-Form Editor across 4 silos</div><span class="risk-badge rb-high">HIGH</span></div><div class="risk-detail"><strong>Impact:</strong> Short-form content bottleneck as upload cadence increases. One illness or departure kills short-form across the group. <br><strong>Mitigation:</strong> Viable short-term only. Each silo needs dedicated short-form editor by Month 6.</div></div>
+    <div class="risk-item"><div class="risk-header"><div class="risk-title">TGF Food has zero existing team</div><span class="risk-badge rb-high">HIGH</span></div><div class="risk-detail"><strong>Impact:</strong> Cannot produce any content until Hire #4 (Channel Manager) is secured. Every role in this silo is a hire. <br><strong>Mitigation:</strong> Hire #4 is a hard prerequisite. Do not begin Food production without a Channel Manager in place.</div></div>
+    <div class="risk-item"><div class="risk-header"><div class="risk-title">Jay ADHD and spontaneous working habits</div><span class="risk-badge rb-med">MEDIUM</span></div><div class="risk-detail"><strong>Impact:</strong> Missed deadlines, inconsistent output, content schedule disruption. <br><strong>Mitigation:</strong> Talent Manager (Abbey) owns Jay's schedule. Clear defined responsibilities. ADHD-friendly structured workflows. Reduce operational dependency on Jay over time.</div></div>
+    <div class="risk-item"><div class="risk-header"><div class="risk-title">Effort gap between Jay and Romell widening</div><span class="risk-badge rb-med">MEDIUM</span></div><div class="risk-detail"><strong>Impact:</strong> Team morale, talent relationship, potential public or contractual dispute. <br><strong>Mitigation:</strong> Abbey's Talent Manager role includes explicit effort gap accountability framework. Romell given structured logistics and sponsorship responsibilities.</div></div>
+    <div class="risk-item"><div class="risk-header"><div class="risk-title">TGFbro comeback loses momentum after initial spike</div><span class="risk-badge rb-med">MEDIUM</span></div><div class="risk-detail"><strong>Impact:</strong> AdSense and sponsorship revenue stagnates. Justification for hiring plan weakens. <br><strong>Mitigation:</strong> Content pipeline must maintain minimum 2 videos/month. Sponsorship deals reduce dependency on AdSense. New channels launching add ecosystem value.</div></div>
+    <div class="risk-item"><div class="risk-header"><div class="risk-title">Dan carrying CEO, Head of BD and Senior PM simultaneously</div><span class="risk-badge rb-med">MEDIUM</span></div><div class="risk-detail"><strong>Impact:</strong> Bandwidth constraints at senior level. Risk of strategic priorities being deprioritised for operational tasks. <br><strong>Mitigation:</strong> Senior PM is the first central role to transition to a dedicated hire as revenue allows.</div></div>
+    <div class="risk-item"><div class="risk-header"><div class="risk-title">Key BBM team member departure during build phase</div><span class="risk-badge rb-med">MEDIUM</span></div><div class="risk-detail"><strong>Impact:</strong> Loss of institutional knowledge and operational capacity at a critical time. <br><strong>Mitigation:</strong> All knowledge, processes and responsibilities documented in Claude Code knowledge base. No single point of failure in documentation.</div></div>
+    <div class="risk-item"><div class="risk-header"><div class="risk-title">Major sponsor pulling out mid-campaign</div><span class="risk-badge rb-low">LOW</span></div><div class="risk-detail"><strong>Impact:</strong> Revenue shortfall. Hiring plan delayed. <br><strong>Mitigation:</strong> Never rely on a single sponsor deal. Diversify across categories. 3-month rolling pipeline of prospective deals maintained by Head of BD.</div></div>
+    <div class="risk-item"><div class="risk-header"><div class="risk-title">PR crisis involving Jay or Romell</div><span class="risk-badge rb-low">LOW</span></div><div class="risk-detail"><strong>Impact:</strong> Sponsor pullout, audience loss, brand damage. <br><strong>Mitigation:</strong> Crisis communications plan to be developed. Talent Manager owns first response. Brand safety clauses in all sponsorship contracts.</div></div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+const roleData = {
+  ceo:{name:"DAN",paid:true,title:"Chief Executive Officer",reports:"Founders / Jay & Romell",salary:"£7,500/mo",resps:["Owns group strategy and development of all TGF brands","Leads brand concept development with Jay, Romell and leadership","Manages brand identity, positioning and go-to-market planning","Coordinates with content silos to integrate brands into content","Reports brand revenue and development milestones to founders"]},
+  coo:{name:"IZAAK",paid:true,title:"Chief Operating Officer",reports:"CEO",salary:"£6,667/mo",resps:["Manages day-to-day operations across all silos","Owns e-commerce platform management (Shopify or equivalent)","Manages inventory, supplier relationships and order fulfilment","Runs promotional campaigns and product launches","Reports e-commerce revenue, margin and conversion metrics"]},
+  cmo:{name:"IZAAK",paid:true,title:"Chief Marketing Officer",reports:"CEO",salary:"£6,250/mo",resps:["Leads development of new TGF Group product lines","Manages relationships with manufacturers and suppliers","Oversees product design, sampling and quality control","Coordinates retail and distribution partnerships","Manages product launch timelines and go-to-market plans"]},
+  analytics:{name:"IZAAK",paid:true,title:"Data & Analytics Manager",reports:"CMO",salary:"£4,000/mo",resps:["Owns performance data across all channels and platforms","Produces weekly analytics reports per silo and central team","Identifies content and audience trends to inform strategy","Manages YouTube Studio, social analytics and third-party tools","Supports sponsorship team with audience data for brand pitches"]},
+  hr:{name:"ELLIE",paid:true,title:"HR Manager",reports:"COO",salary:"£3,500/mo",resps:["Owns recruitment process for all new hires across the group","Manages onboarding for all new team members","Handles employee relations, performance reviews and disciplinaries","Ensures UK employment law compliance as headcount scales","Manages freelancer and contractor relationships and IR35 compliance"]},
+  spm:{name:"DAN",paid:true,title:"Senior Project Manager",reports:"COO",salary:"£4,333/mo",resps:["Monitors delivery timelines across all silos","Runs weekly silo check-ins and escalates issues to COO","Maintains master production schedule across all channels","Owns the project management toolstack and processes","Ensures every channel launch hits its pre-launch checklist"]},
+  talent:{name:"ABBEY",paid:true,title:"Talent Manager",reports:"COO",salary:"£4,000/mo",resps:["Manages Jay and Romell's schedules, wellbeing and workload","Owns the effort gap accountability framework between Jay and Romell","Manages Chloe and all on-screen talent relationships","Coordinates talent availability across all silo production schedules","Acts as first point of contact for all talent-related issues"]},
+  finance:{name:"HIRE #6",paid:false,title:"Finance Manager",reports:"COO",salary:"£4,333/mo",resps:["Tracks revenue and costs across all silos monthly","Manages BBM 20% revenue share calculation and payment","Produces monthly P&L and forecasts for executive team","Owns the hiring cost model and revenue trigger monitoring","Manages accountant and financial advisor relationships"]},
+  cto:{name:"HIRE #5",paid:false,title:"Chief Technology Officer",reports:"CEO",salary:"£7,083/mo",resps:["Owns TGF Max technical architecture and roadmap","Manages platform provider and developer relationships","Oversees data security and privacy compliance","Evaluates and recommends technology tools across the group","Leads future tech product development including AI implementation"]},
+  hbd:{name:"DAN",paid:true,title:"Head of Business Development",reports:"CEO",salary:"£5,417/mo",resps:["Sources, negotiates and closes sponsorship and brand deals","Builds the TGF ecosystem media rate card and packages","Manages brand partner and agency relationships","Identifies and develops auxiliary brand and licensing opportunities","Leads commercial strategy for TGF Max and product brands"]},
+  "tgfbro-cm":{name:"JT",paid:true,title:"Channel Manager — TGFbro",reports:"COO / Senior PM",salary:"£4,000/mo",resps:["Owns overall channel strategy and performance","Manages the TGFbro silo team day-to-day","Leads video ideation and content calendar","Liaises with central team on sponsorship integrations","Reports channel KPIs weekly to Senior PM"]},
+  "tgfbro-hop":{name:"THIERRY",paid:true,title:"Head of Production — TGFbro",reports:"Channel Manager",salary:"£4,333/mo",resps:["Leads all shoot days for TGFbro content","Manages videographer and edit team","Owns production quality standards","Coordinates equipment, locations and logistics","Signs off all content before upload"]},
+  "tgfbro-sve":{name:"THIERRY",paid:true,title:"Senior Video Editor — TGFbro",reports:"Head of Production",salary:"£3,500/mo",resps:["Leads long-form video editing for main channel","Owns the edit style and visual language of TGFbro","Collaborates with Head of Production on pacing and structure","Delivers edits to agreed turnaround times","Provides feedback and direction to junior editors"]},
+  "tgfbro-2ve":{name:"HIRE #2",paid:false,title:"Second Video Editor — TGFbro",reports:"Head of Production",salary:"£3,000/mo",resps:["Handles overflow long-form edits as upload cadence increases","Assists Senior Editor on complex projects","Edits secondary content such as reaction cuts and extended versions","Manages TGF Max exclusive edits and extended cuts","Maintains edit consistency with Senior Editor guidance"]},
+  "tgfbro-vc":{name:"THIERRY",paid:true,title:"Videographer / Cinematographer — TGFbro",reports:"Head of Production",salary:"£3,167/mo",resps:["Shoots all TGFbro long-form content","Owns camera, lighting and audio setup on shoot days","Manages and maintains all equipment","Captures B-roll and supplementary footage","Works with editor on shot requirements in pre-production"]},
+  "tgfbro-smm":{name:"HIRE #3",paid:false,title:"Social Media Manager — TGFbro",reports:"Channel Manager",salary:"£2,500/mo",resps:["Manages TGFgroup presence across Instagram, X, TikTok and Facebook","Owns community engagement — comments and DMs","Plans and executes social content calendar around uploads","Manages Facebook page growth for monetisation eligibility","Reports social growth and engagement metrics weekly"]},
+  "tgfbro-sfe":{name:"JAYRON",paid:true,title:"Short-Form Editor — TGFbro",reports:"Social Media Manager",salary:"£2,667/mo",resps:["Produces all Shorts, Reels and TikTok content from long-form videos","Owns short-form publishing schedule","Identifies viral moments from long-form for clip distribution","Optimises captions, hooks and formats per platform","Reports short-form performance metrics weekly"]},
+  "tgfbro-td":{name:"HIRE #1",paid:false,title:"Thumbnail Designer — TGFbro",reports:"Channel Manager",salary:"£2,500/mo",resps:["Designs all thumbnails for TGFbro uploads","A/B tests thumbnail concepts to maximise CTR","Maintains consistent visual brand identity","Produces title card graphics and on-screen text assets","Collaborates with editor on thumbnail moments during post-production"]},
+  "gaming-cm":{name:"LINDAN",paid:true,title:"Channel Manager — TGF Gaming",reports:"COO / Senior PM",salary:"£3,750/mo",resps:["Owns overall Gaming channel strategy and performance","Manages the Gaming silo team day-to-day","Leads video ideation and content calendar","Liaises with central team on gaming sponsorships","Reports channel KPIs weekly to Senior PM"]},
+  "gaming-sve":{name:"LINDAN",paid:true,title:"Senior Video Editor — TGF Gaming",reports:"Channel Manager",salary:"£3,000/mo",resps:["Leads long-form video editing for Gaming channel","Owns the edit style and visual language of TGF Gaming","Collaborates with Channel Manager on pacing and structure","Delivers edits to agreed turnaround times","Provides feedback and direction to junior editors"]},
+  "gaming-smm":{name:"HIRE #3",paid:false,title:"Social Media Manager — TGF Gaming",reports:"Channel Manager",salary:"£2,500/mo",resps:["Manages TGF Gaming social presence across all platforms","Owns community engagement","Plans and executes social content calendar","Manages Facebook page growth for monetisation eligibility","Reports social growth and engagement metrics weekly"]},
+  "gaming-sfe":{name:"JAYRON",paid:true,title:"Short-Form Editor — TGF Gaming",reports:"Social Media Manager",salary:"£2,500/mo",resps:["Produces all Shorts, Reels and TikTok content from long-form videos","Owns short-form publishing schedule","Identifies viral moments from long-form","Optimises captions, hooks and formats per platform","Reports short-form performance metrics weekly"]},
+  "gaming-td":{name:"HIRE #1",paid:false,title:"Thumbnail Designer — TGF Gaming",reports:"Channel Manager",salary:"£2,500/mo",resps:["Designs all thumbnails for TGF Gaming uploads","A/B tests thumbnail concepts to maximise CTR","Maintains consistent visual brand identity","Produces title card graphics and on-screen text assets","Collaborates with editor on thumbnail moments"]},
+  "tom-cm":{name:"ELLIE",paid:true,title:"Channel Manager — Troof or Miff",reports:"COO / Senior PM",salary:"£3,750/mo",resps:["Owns the entire Troof or Miff show from ideation to distribution","Manages the ToM silo team","Develops show themes, episode formats and questions","Coordinates with talent (Chloe, Jay, Romell) on creative direction","Reports show performance and audience metrics to central team"]},
+  "tom-sp":{name:"ABBEY",paid:true,title:"Show Producer — Troof or Miff",reports:"Channel Manager",salary:"£3,750/mo",resps:["Live edits all Troof or Miff recordings","Organises Talent & Production team on shoot days","Owns logistical requirements, set items and talent cues","Owns production scheduling and shoot bookings","Works with channel manager on content pipelines"]},
+  "tom-ve":{name:"JOSH TGF",paid:true,title:"Video Editor — Troof or Miff",reports:"Channel Manager",salary:"£2,833/mo",resps:["Edits all Troof or Miff episodes","Manages pacing, graphics and show format consistency","Produces highlight clips for social distribution","Delivers to agreed turnaround schedule","Collaborates with Show Producer on edit style and tone"]},
+  "tom-vc1":{name:"JOSH TGF",paid:true,title:"Videographer — Troof or Miff",reports:"Show Producer",salary:"£3,000/mo",resps:["Shoots all Troof or Miff recordings","Sets up multi-camera rigs for gameshow format","Manages lighting and audio for studio/set environment","Maintains equipment and manages shoot logistics","Works with editor on shot list and coverage requirements"]},
+  "tom-vc2":{name:"LINDAN",paid:true,title:"Videographer — Troof or Miff",reports:"Show Producer",salary:"£3,000/mo",resps:["Shoots all Troof or Miff recordings","Sets up multi-camera rigs for gameshow format","Manages lighting and audio for studio/set environment","Maintains equipment and manages shoot logistics","Works with editor on shot list and coverage requirements"]},
+  "tom-smm":{name:"HIRE #3",paid:false,title:"Social Media Manager — Troof or Miff",reports:"Channel Manager",salary:"£2,500/mo",resps:["Manages ToM social presence across all platforms","Owns community engagement and DMs","Plans and executes social content calendar","Manages Facebook page growth for monetisation eligibility","Reports social growth and engagement metrics weekly"]},
+  "tom-sfe":{name:"JAYRON",paid:true,title:"Short-Form Editor — Troof or Miff",reports:"Social Media Manager",salary:"£2,500/mo",resps:["Produces all Shorts, Reels and TikTok content from long-form","Owns short-form publishing schedule","Identifies viral moments from long-form for clip distribution","Optimises captions, hooks and formats per platform","Reports short-form performance metrics weekly"]},
+  "tom-td":{name:"HIRE #1",paid:false,title:"Thumbnail Designer — Troof or Miff",reports:"Channel Manager",salary:"£2,500/mo",resps:["Designs all thumbnails for Troof or Miff projects","A/B tests thumbnail concepts to maximise CTR","Maintains consistent visual brand identity","Produces title card graphics and on-screen text assets","Collaborates with editor on thumbnail moments during post-production"]},
+  "food-cm":{name:"HIRE #4",paid:false,title:"Channel Manager — TGF Food",reports:"COO / Senior PM",salary:"£4,000/mo",resps:["Owns overall TGF Food channel strategy and performance","Manages the TGF Food silo team day-to-day","Leads video ideation and content calendar","Liaises with central team on food brand sponsorships","Reports channel KPIs weekly to Senior PM"]},
+  "food-hop":{name:"THIERRY",paid:true,title:"Head of Production — TGF Food",reports:"Channel Manager",salary:"£4,333/mo",resps:["Leads all shoot days for TGF Food content","Manages videographer and edit team","Owns production quality standards","Coordinates international travel logistics and equipment","Signs off all content before upload"]},
+  "food-sve":{name:"HIRE #2",paid:false,title:"Senior Video Editor — TGF Food",reports:"Head of Production",salary:"£3,000/mo",resps:["Leads long-form video editing for TGF Food channel","Owns the edit style and visual language of TGFfood","Collaborates with Head of Production on pacing and structure","Delivers edits to agreed turnaround times","Provides feedback and direction to junior editors"]},
+  "food-vc":{name:"HIRE #2",paid:false,title:"Videographer — TGF Food",reports:"Head of Production",salary:"£3,000/mo",resps:["Shoots all TGF Food travel content internationally","Owns camera, lighting and audio setup in varied locations","Manages and transports equipment internationally","Captures food-specific close-up and atmospheric footage","Works with editor on shot requirements in pre-production"]},
+  "food-smm":{name:"HIRE #3",paid:false,title:"Social Media Manager — TGF Food",reports:"Channel Manager",salary:"£2,500/mo",resps:["Manages TGF Food social presence across all platforms","Owns community engagement","Plans and executes social content calendar around uploads","Manages Facebook page growth for monetisation eligibility","Reports social growth and engagement metrics weekly"]},
+  "food-sfe":{name:"JAYRON",paid:true,title:"Short-Form Editor — TGF Food",reports:"Social Media Manager",salary:"£2,500/mo",resps:["Produces all Shorts, Reels and TikTok content from long-form","Owns short-form publishing schedule","Identifies viral moments from food travel content","Optimises captions, hooks and formats per platform","Reports short-form performance metrics weekly"]},
+  "food-td":{name:"HIRE #1",paid:false,title:"Thumbnail Designer — TGF Food",reports:"Channel Manager",salary:"£2,500/mo",resps:["Designs all thumbnails for TGF Food uploads","A/B tests thumbnail concepts to maximise CTR","Maintains consistent visual brand identity","Produces title card graphics and on-screen text assets","Collaborates with editor on thumbnail moments during post-production"]}
+};
+
+function showSection(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('s-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+function showSilo(id, el) {
+  document.querySelectorAll('[id^="silo-"]').forEach(s => s.style.display = 'none');
+  document.getElementById('silo-' + id).style.display = 'flex';
+  document.querySelectorAll('.silo-tab').forEach(t => {
+    t.classList.remove('active');
+    t.style.background = 'transparent';
+    t.style.color = '';
+  });
+  if (el) {
+    el.classList.add('active');
+    const col = el.dataset.color || 'var(--gold)';
+    el.style.background = col;
+    el.style.color = '#0c0c0e';
+  }
+}
+
+function openModal(id) {
+  const d = roleData[id]; if (!d) return;
+  const nc = d.paid ? 'background:rgba(46,204,113,.15);color:var(--green)' : 'background:var(--red-bg);color:var(--red)';
+  const sc = d.paid ? 'color:var(--green)' : 'color:var(--red)';
+  const pn = d.paid ? '<div style="font-size:11px;color:var(--green);font-style:italic;margin-top:2px">Already paid by BBM</div>' : '';
+  document.getElementById('modal-content').innerHTML = `
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <span class="modal-name" style="${nc}">${d.name}</span>
+    <div class="modal-title">${d.title}</div>
+    <div class="modal-reports">Reports to: ${d.reports}</div>
+    <div class="modal-salary" style="${sc}">${d.salary}</div>
+    ${pn}
+    <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+    <div class="modal-section">Responsibilities</div>
+    <ul class="modal-list">${d.resps.map(r => `<li>${r}</li>`).join('')}</ul>`;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal'))
+    document.getElementById('modal').classList.remove('open');
+}
+
+function toggleHire(el) {
+  const row = el.closest('.hire-row');
+  row.classList.toggle('filled');
+  updateHireTotals();
+}
+
+function updateHireTotals() {
+  const rows = document.querySelectorAll('.hire-row');
+  let remaining = 0, filled = 0, total = 0;
+  rows.forEach(r => {
+    const s = parseInt(r.dataset.salary) || 0;
+    total += s;
+    if (r.classList.contains('filled')) filled += s;
+    else remaining += s;
+  });
+  const fmt = n => '£' + n.toLocaleString() + '/mo';
+  document.getElementById('ht-total').textContent = fmt(total);
+  document.getElementById('ht-remaining').textContent = fmt(remaining);
+  document.getElementById('ht-filled').textContent = fmt(filled);
+}
+
+function toggleMs(el) {
+  el.classList.toggle('done');
+  el.textContent = el.classList.contains('done') ? '✓' : '';
+}
+</script>
+</body>
+</html>
