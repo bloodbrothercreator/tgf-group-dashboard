@@ -476,126 +476,50 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
 
 <!-- ══════════════ HIRE TRACKER ══════════════ -->
 <section class="section" id="hires">
-  <div class="page-header">
-    <h1>Hire Tracker</h1>
-    <p>8 individuals across 6 priority slots. All silo hires employed by TGF Group Ltd.</p>
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>Hire Tracker</h1>
+      <p id="hires-sub">Open positions across TGF Group. All silo hires employed by TGF Group Ltd.</p>
+    </div>
+    <button class="btn-primary" onclick="openAddHireModal()">+ Add Position</button>
   </div>
 
   <div class="grid-4" style="margin-bottom:24px">
     <div class="stat-card">
-      <div class="stat-label">Total Hires Needed</div>
-      <div class="stat-value" style="color:var(--red)">8</div>
-      <div class="stat-sub">People across 6 priority slots</div>
+      <div class="stat-label">Open Positions</div>
+      <div class="stat-value" style="color:var(--red)" id="hire-kpi-open">—</div>
+      <div class="stat-sub" id="hire-kpi-open-sub">People still to hire</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">New Monthly Salary</div>
-      <div class="stat-value" style="color:var(--amber)">£30K</div>
-      <div class="stat-sub">~£36K cost-to-company</div>
+      <div class="stat-value" style="color:var(--amber)" id="hire-kpi-salary">—</div>
+      <div class="stat-sub" id="hire-kpi-ctc-sub">Cost-to-company estimate</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Most Urgent</div>
-      <div class="stat-value" style="font-size:16px;color:var(--red)">Hire #2</div>
-      <div class="stat-sub">TGFbro 2nd Editor — Thierry at risk</div>
+      <div class="stat-value" style="font-size:16px;color:var(--red)" id="hire-kpi-urgent">—</div>
+      <div class="stat-sub" id="hire-kpi-urgent-sub">Highest priority open role</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Revenue Needed</div>
-      <div class="stat-value" style="font-size:22px">~£170K</div>
-      <div class="stat-sub">Monthly gross to fully break even</div>
+      <div class="stat-label">Positions Filled</div>
+      <div class="stat-value" style="color:var(--green)" id="hire-kpi-filled">—</div>
+      <div class="stat-sub">Hired or in final stages</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">Open Positions — Priority Order</div>
+    <div class="card-title">All Positions — Priority Order</div>
     <table class="data-table">
       <thead><tr>
-        <th>Slot</th><th>Role</th><th>Silo / Area</th><th>People</th><th>Priority</th><th>Monthly Salary</th><th>Status</th><th>Why Urgent</th>
+        <th>Slot</th><th>Role</th><th>Silo / Area</th><th>People</th><th>Priority</th><th>Monthly Salary</th><th>Status</th><th>Notes</th><th></th>
       </tr></thead>
-      <tbody>
-        <tr>
-          <td style="color:var(--muted)">#1</td>
-          <td><strong>Thumbnail Designer</strong></td>
-          <td>All 4 Silos (shared)</td>
-          <td>1</td>
-          <td><span class="hire-priority p1">P1 — Urgent</span></td>
-          <td style="color:var(--gold)">£2,500</td>
-          <td><span class="pill pill-red">Open</span></td>
-          <td style="font-size:12px;color:var(--muted)">CTR impacts all channels directly</td>
-        </tr>
-        <tr>
-          <td style="color:var(--muted)">#2a</td>
-          <td><strong>Second Video Editor</strong></td>
-          <td>TGFbro</td>
-          <td>1</td>
-          <td><span class="hire-priority p1">P1 — Urgent</span></td>
-          <td style="color:var(--gold)">£3,000</td>
-          <td><span class="pill pill-red">Open</span></td>
-          <td style="font-size:12px;color:var(--muted)">Relieves Thierry — most critical single point of failure</td>
-        </tr>
-        <tr>
-          <td style="color:var(--muted)">#2b</td>
-          <td><strong>Senior Video Editor</strong></td>
-          <td>TGF Food</td>
-          <td>1</td>
-          <td><span class="hire-priority p1">P1 — Urgent</span></td>
-          <td style="color:var(--gold)">£3,000</td>
-          <td><span class="pill pill-red">Open</span></td>
-          <td style="font-size:12px;color:var(--muted)">Required for Food to produce content</td>
-        </tr>
-        <tr>
-          <td style="color:var(--muted)">#2c</td>
-          <td><strong>Videographer</strong></td>
-          <td>TGF Food</td>
-          <td>1</td>
-          <td><span class="hire-priority p1">P1 — Urgent</span></td>
-          <td style="color:var(--gold)">£3,000</td>
-          <td><span class="pill pill-red">Open</span></td>
-          <td style="font-size:12px;color:var(--muted)">Run-and-gun travel filming for Food</td>
-        </tr>
-        <tr>
-          <td style="color:var(--muted)">#3</td>
-          <td><strong>Social Media Manager</strong></td>
-          <td>All 4 Silos (shared)</td>
-          <td>1</td>
-          <td><span class="hire-priority p2">P2 — High</span></td>
-          <td style="color:var(--gold)">£2,500</td>
-          <td><span class="pill pill-red">Open</span></td>
-          <td style="font-size:12px;color:var(--muted)">No one currently owns social — massive gap</td>
-        </tr>
-        <tr>
-          <td style="color:var(--muted)">#4</td>
-          <td><strong>Food Channel Manager</strong></td>
-          <td>TGF Food</td>
-          <td>1</td>
-          <td><span class="hire-priority p2">P2 — High</span></td>
-          <td style="color:var(--gold)">£4,000</td>
-          <td><span class="pill pill-red">Open</span></td>
-          <td style="font-size:12px;color:var(--muted)">Prerequisite — no Food content without this role</td>
-        </tr>
-        <tr>
-          <td style="color:var(--muted)">#5</td>
-          <td><strong>CTO</strong></td>
-          <td>Central</td>
-          <td>1</td>
-          <td><span class="hire-priority p3">P3 — Standard</span></td>
-          <td style="color:var(--gold)">£7,083</td>
-          <td><span class="pill pill-amber">Pipeline</span></td>
-          <td style="font-size:12px;color:var(--muted)">Required before TGF Max platform build begins</td>
-        </tr>
-        <tr>
-          <td style="color:var(--muted)">#6</td>
-          <td><strong>Finance Manager</strong></td>
-          <td>Central</td>
-          <td>1</td>
-          <td><span class="hire-priority p4">P4 — Planned</span></td>
-          <td style="color:var(--gold)">£4,333</td>
-          <td><span class="pill pill-amber">Pipeline</span></td>
-          <td style="font-size:12px;color:var(--muted)">Financial controls as revenue &amp; headcount scales</td>
-        </tr>
+      <tbody id="hires-tbody">
+        <!-- rendered by JS -->
       </tbody>
     </table>
   </div>
 
-  <div class="alert-banner alert-amber" style="margin-top:8px">
+  <div class="alert-banner alert-amber" style="margin-top:8px" id="hires-note">
     ⚠ <strong>Shared roles note:</strong> Hire #1 (Thumbnail Designer) and Hire #3 (Social Media Manager) are each ONE person covering all four silos short-term. Hire #2 is THREE separate people across TGFbro and TGF Food.
   </div>
 </section>
@@ -1557,6 +1481,151 @@ function editStaffCost(i) {
 }
 
 // ══════════════════════════════════════════
+//  HIRE TRACKER
+// ══════════════════════════════════════════
+const defaultHiresData = [
+  { id:'h1',  slot:'#1',  role:'Thumbnail Designer',      silo:'All 4 Silos (shared)', people:1, priority:'p1', salary:2500, status:'open',        notes:'CTR impacts all channels directly. Highest collective ROI hire.' },
+  { id:'h2a', slot:'#2a', role:'Second Video Editor',      silo:'TGFbro',               people:1, priority:'p1', salary:3000, status:'open',        notes:'Relieves Thierry — most critical single point of failure.' },
+  { id:'h2b', slot:'#2b', role:'Senior Video Editor',      silo:'TGF Food',             people:1, priority:'p1', salary:3000, status:'open',        notes:'Required for Food to produce any content.' },
+  { id:'h2c', slot:'#2c', role:'Videographer',             silo:'TGF Food',             people:1, priority:'p1', salary:3000, status:'open',        notes:'Run-and-gun travel filming for Food channel.' },
+  { id:'h3',  slot:'#3',  role:'Social Media Manager',     silo:'All 4 Silos (shared)', people:1, priority:'p2', salary:2500, status:'open',        notes:'No one currently owns social across any silo — massive gap.' },
+  { id:'h4',  slot:'#4',  role:'Food Channel Manager',     silo:'TGF Food',             people:1, priority:'p2', salary:4000, status:'open',        notes:'Prerequisite — no Food content without this role.' },
+  { id:'h5',  slot:'#5',  role:'CTO',                      silo:'Central',              people:1, priority:'p3', salary:7083, status:'pipeline',    notes:'Required before TGF Max platform build begins.' },
+  { id:'h6',  slot:'#6',  role:'Finance Manager',          silo:'Central',              people:1, priority:'p4', salary:4333, status:'pipeline',    notes:'Financial controls as revenue and headcount scale.' },
+];
+
+let hiresData = JSON.parse(localStorage.getItem('tgf4_hires') || 'null') || defaultHiresData.map(h => ({...h}));
+
+const hirePriorityLabel = { p1:'P1 — Urgent', p2:'P2 — High', p3:'P3 — Standard', p4:'P4 — Planned' };
+const hireStatusConfig = {
+  open:         { label:'Open',         cls:'pill-red'   },
+  interviewing: { label:'Interviewing', cls:'pill-gold'  },
+  pipeline:     { label:'Pipeline',     cls:'pill-amber' },
+  hired:        { label:'Hired ✓',      cls:'pill-green' },
+};
+
+function renderHireTracker() {
+  const tbody = document.getElementById('hires-tbody');
+  if (!tbody) return;
+
+  // sort: priority order p1 → p4, then by slot string
+  const order = ['p1','p2','p3','p4'];
+  const sorted = [...hiresData].sort((a,b) => order.indexOf(a.priority) - order.indexOf(b.priority) || a.slot.localeCompare(b.slot));
+
+  tbody.innerHTML = sorted.map(h => {
+    const sc = hireStatusConfig[h.status] || hireStatusConfig.open;
+    const pc = h.priority;
+    return `
+      <tr onclick="editHire('${h.id}')" style="cursor:pointer">
+        <td style="color:var(--muted)">${h.slot}</td>
+        <td><strong>${h.role}</strong></td>
+        <td style="font-size:12px;color:var(--muted)">${h.silo}</td>
+        <td style="text-align:center">${h.people}</td>
+        <td><span class="hire-priority ${pc}">${hirePriorityLabel[pc]||pc}</span></td>
+        <td style="color:var(--gold)">£${Number(h.salary).toLocaleString()}</td>
+        <td><span class="pill ${sc.cls}">${sc.label}</span></td>
+        <td style="font-size:12px;color:var(--muted);max-width:240px;white-space:normal">${h.notes}</td>
+        <td><button class="edit-btn" onclick="event.stopPropagation();editHire('${h.id}')">✏️</button></td>
+      </tr>
+    `;
+  }).join('');
+
+  // update KPI cards
+  const open   = hiresData.filter(h => h.status !== 'hired');
+  const filled = hiresData.filter(h => h.status === 'hired');
+  const openSalary = open.reduce((s,h) => s + Number(h.salary), 0);
+  const urgent = open.find(h => h.priority === 'p1');
+
+  const el = id => document.getElementById(id);
+  if (el('hire-kpi-open'))    el('hire-kpi-open').textContent    = open.length;
+  if (el('hire-kpi-open-sub'))el('hire-kpi-open-sub').textContent= `${hiresData.reduce((s,h)=>s+h.people,0)} people across ${hiresData.length} slots`;
+  if (el('hire-kpi-salary'))  el('hire-kpi-salary').textContent  = '£' + Math.round(openSalary/1000) + 'K';
+  if (el('hire-kpi-ctc-sub')) el('hire-kpi-ctc-sub').textContent = '~£' + Math.round(openSalary*1.22/1000) + 'K cost-to-company';
+  if (el('hire-kpi-urgent'))  el('hire-kpi-urgent').textContent  = urgent ? urgent.slot : '—';
+  if (el('hire-kpi-urgent-sub'))el('hire-kpi-urgent-sub').textContent = urgent ? urgent.role : 'All P1 roles filled';
+  if (el('hire-kpi-filled'))  el('hire-kpi-filled').textContent  = filled.length || '0';
+}
+
+function hireFormHtml(h) {
+  const silos = ['All 4 Silos (shared)','TGFbro','TGF Gaming','Troof or Miff','TGF Food','TGF Live','TGF Max','Central'];
+  return `
+    <div class="form-row">
+      <div>
+        <label class="form-label">Slot</label>
+        <input class="form-input" id="hf-slot" value="${h.slot||''}" placeholder="e.g. #1, #2a">
+      </div>
+      <div>
+        <label class="form-label">People (headcount)</label>
+        <input class="form-input" id="hf-people" type="number" min="1" value="${h.people||1}">
+      </div>
+    </div>
+    <div>
+      <label class="form-label">Role / Job Title</label>
+      <input class="form-input" id="hf-role" value="${(h.role||'').replace(/"/g,'&quot;')}" placeholder="Role name">
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Silo / Area</label>
+        <select class="form-input" id="hf-silo">
+          ${silos.map(s => `<option value="${s}" ${h.silo===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Monthly Salary (£)</label>
+        <input class="form-input" id="hf-salary" type="number" min="0" value="${h.salary||0}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Priority</label>
+        <select class="form-input" id="hf-priority">
+          ${Object.entries(hirePriorityLabel).map(([v,l]) => `<option value="${v}" ${h.priority===v?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Status</label>
+        <select class="form-input" id="hf-status">
+          ${Object.entries(hireStatusConfig).map(([v,c]) => `<option value="${v}" ${h.status===v?'selected':''}>${c.label}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div>
+      <label class="form-label">Notes / Why Urgent</label>
+      <textarea class="form-input" id="hf-notes" rows="3" style="resize:vertical">${h.notes||''}</textarea>
+    </div>
+  `;
+}
+
+function saveHireFromModal(h) {
+  h.slot     = document.getElementById('hf-slot').value.trim();
+  h.role     = document.getElementById('hf-role').value.trim();
+  h.silo     = document.getElementById('hf-silo').value;
+  h.people   = parseInt(document.getElementById('hf-people').value) || 1;
+  h.salary   = parseFloat(document.getElementById('hf-salary').value) || 0;
+  h.priority = document.getElementById('hf-priority').value;
+  h.status   = document.getElementById('hf-status').value;
+  h.notes    = document.getElementById('hf-notes').value.trim();
+  localStorage.setItem('tgf4_hires', JSON.stringify(hiresData));
+  renderHireTracker();
+  closeModal();
+}
+
+function editHire(id) {
+  const h = hiresData.find(x => x.id === id);
+  if (!h) return;
+  openModal('Edit Position', hireFormHtml(h), () => saveHireFromModal(h));
+}
+
+function openAddHireModal() {
+  const h = { id:'h'+Date.now(), slot:'', role:'', silo:'TGFbro', people:1, priority:'p2', salary:0, status:'open', notes:'' };
+  openModal('Add Position', hireFormHtml(h), () => {
+    if (!document.getElementById('hf-role').value.trim()) return;
+    hiresData.push(h);
+    saveHireFromModal(h);
+  }, 'Add');
+}
+
+// ══════════════════════════════════════════
 //  MILESTONES
 // ══════════════════════════════════════════
 const milestones = [
@@ -1826,6 +1895,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initChart();
   renderEarningsLog();
   renderStaffTable();
+  renderHireTracker();
   renderMilestones('all');
   renderOrgSection('central');
   renderRisks();
