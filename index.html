@@ -160,11 +160,26 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
 .add-log-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; padding: 16px; background: var(--surface2); border-radius: 10px; margin-top: 16px; }
 .form-group { display: flex; flex-direction: column; gap: 4px; }
 .form-group label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .5px; }
-.form-group select, .form-group input {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
-  color: var(--text); font-family: inherit; font-size: 13px; padding: 7px 10px; outline: none;
+.form-group select, .form-group input, .form-group textarea {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: inherit; font-size: 13px; padding: 8px 11px; outline: none;
+  appearance: none; -webkit-appearance: none;
 }
-.form-group select:focus, .form-group input:focus { border-color: var(--gold-dim); }
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color: var(--gold-dim); }
+.form-group select option { background: var(--surface2); }
+
+/* Modal / popup form inputs */
+.form-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; display: block; margin-bottom: 5px; }
+.form-input {
+  width: 100%; box-sizing: border-box;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: inherit; font-size: 13px; padding: 9px 12px;
+  outline: none; transition: border-color .15s;
+  appearance: none; -webkit-appearance: none;
+}
+.form-input:focus { border-color: var(--gold-dim); box-shadow: 0 0 0 2px rgba(201,168,76,.08); }
+.form-input::placeholder { color: var(--muted); opacity: 1; }
+.form-input option { background: var(--surface2); color: var(--text); }
 .btn-primary {
   background: var(--gold); color: #0d0f14; border: none; border-radius: 7px;
   font-family: inherit; font-size: 13px; font-weight: 700; padding: 8px 18px;
@@ -528,22 +543,19 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
 <section class="section" id="financial">
   <div class="page-header">
     <h1>Financial Tracker</h1>
-    <p>Per-channel earnings log &amp; revenue history. Add entries below. Data persists in your browser.</p>
+    <p>Per-channel earnings &amp; spendings log. All data persists in your browser.</p>
   </div>
 
   <div class="grid-3" style="margin-bottom:24px">
     <div class="stat-card">
-      <div class="stat-label">Total Logged (Current)</div>
-      <div class="stat-value gold editable-wrap">
-        £<span id="fin-total">46,474</span>
-        <button class="edit-btn" onclick="editStat('fin-total','Total Revenue')">✏️</button>
-      </div>
-      <div class="stat-sub">From confirmed earnings log</div>
+      <div class="stat-label">Total Revenue (Logged)</div>
+      <div class="stat-value gold" id="fin-total">£0</div>
+      <div class="stat-sub" id="fin-total-sub">From confirmed earnings log</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Gap to Target</div>
-      <div class="stat-value" style="color:var(--red)" id="fin-gap">£153,526</div>
-      <div class="stat-sub" id="fin-pct-sub">23.2% of £200K target achieved</div>
+      <div class="stat-value" style="color:var(--red)" id="fin-gap">—</div>
+      <div class="stat-sub" id="fin-pct-sub">—</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">AdSense RPM</div>
@@ -558,68 +570,53 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
   <div class="grid-2-1">
     <!-- CHART -->
     <div class="card">
-      <div class="card-title">Revenue by Channel (Logged)</div>
+      <div class="card-title">Revenue vs Spending by Channel</div>
       <div class="chart-wrap">
         <canvas id="revenueChart"></canvas>
       </div>
     </div>
-    <!-- CHANNEL SUMMARY -->
+    <!-- CHANNEL TARGETS -->
     <div class="card">
-      <div class="card-title">Channel Summary</div>
-      <div id="fin-channel-summary">Loading…</div>
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Monthly Channel Targets</span>
+        <span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">click to edit</span>
+      </div>
+      <div id="channel-targets-body"><!-- rendered by JS --></div>
+      <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:6px;display:flex;justify-content:space-between;font-size:13px;font-weight:700">
+        <span style="color:var(--muted)">Group Total</span>
+        <span style="color:var(--gold)" id="targets-total">£0</span>
+      </div>
     </div>
   </div>
 
   <!-- EARNINGS LOG -->
-  <div class="card" style="margin-bottom:24px">
-    <div class="card-title">Earnings Log</div>
+  <div class="card" style="margin-bottom:0">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Earnings Log</span>
+      <button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="openAddEarningsModal()">+ Add Entry</button>
+    </div>
     <table class="data-table">
       <thead><tr>
         <th>Date</th><th>Channel</th><th>Type</th><th>Amount</th><th>Notes</th><th></th>
       </tr></thead>
       <tbody id="earnings-log-body"></tbody>
     </table>
+    <p id="earnings-empty" style="color:var(--muted);font-size:13px;padding:12px;display:none">No earnings logged yet.</p>
+  </div>
 
-    <!-- ADD ENTRY FORM -->
-    <div class="add-log-form">
-      <div class="form-group">
-        <label>DATE</label>
-        <input type="text" id="log-date" placeholder="e.g. Apr 2026" style="width:110px" />
-      </div>
-      <div class="form-group">
-        <label>CHANNEL</label>
-        <select id="log-channel">
-          <option>TGFbro</option>
-          <option>Gaming</option>
-          <option>Food</option>
-          <option>Live</option>
-          <option>Max</option>
-          <option>Troof or Miff</option>
-          <option>Group</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>TYPE</label>
-        <select id="log-type">
-          <option>AdSense</option>
-          <option>Sponsorship</option>
-          <option>Partnership</option>
-          <option>Merch</option>
-          <option>Live Event</option>
-          <option>Subscription</option>
-          <option>Other</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>AMOUNT (£)</label>
-        <input type="number" id="log-amount" placeholder="0" style="width:110px" />
-      </div>
-      <div class="form-group">
-        <label>NOTES</label>
-        <input type="text" id="log-notes" placeholder="Optional" style="width:200px" />
-      </div>
-      <button class="btn-primary" onclick="addEarningsEntry()">+ Add Entry</button>
+  <!-- SPENDINGS LOG -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Spendings Log</span>
+      <button class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="openAddSpendingModal()">+ Add Spending</button>
     </div>
+    <table class="data-table">
+      <thead><tr>
+        <th>Date</th><th>Channel</th><th>Category</th><th>Amount</th><th>Notes</th><th></th>
+      </tr></thead>
+      <tbody id="spendings-log-body"></tbody>
+    </table>
+    <p id="spendings-empty" style="color:var(--muted);font-size:13px;padding:12px;display:none">No spendings logged yet.</p>
   </div>
 </section>
 
@@ -1203,7 +1200,12 @@ function getRevTotal() {
   return earningsLog.reduce((s, e) => s + Number(e.amount), 0);
 }
 function getRevTarget() {
-  return parseFloat(localStorage.getItem('tgf4_target')) || 200000;
+  // sum of all channel targets (falls back to 200K if targets not loaded yet)
+  if (typeof channelTargets !== 'undefined') {
+    const sum = Object.values(channelTargets).reduce((a,b) => a + Number(b), 0);
+    return sum > 0 ? sum : 200000;
+  }
+  return 200000;
 }
 
 function updateRevProgress() {
@@ -1270,92 +1272,281 @@ function renderOverviewBreakdown() {
 // ══════════════════════════════════════════
 //  EARNINGS LOG
 // ══════════════════════════════════════════
+const CHANNELS = ['TGFbro', 'Group', 'Gaming', 'Food', 'Live', 'Max', 'Troof or Miff'];
+
+const defaultRevTypes  = ['AdSense','Sponsorship','Partnership','Merch','Live Event','Subscription','Other'];
+const defaultSpendTypes = ['Staff','Equipment','Travel','Software','Ads','Production','Other'];
+
+let customRevTypes   = JSON.parse(localStorage.getItem('tgf4_revTypes')   || '[]');
+let customSpendTypes = JSON.parse(localStorage.getItem('tgf4_spendTypes') || '[]');
+
+function allRevTypes()   { return [...defaultRevTypes,   ...customRevTypes.filter(t => !defaultRevTypes.includes(t))]; }
+function allSpendTypes() { return [...defaultSpendTypes, ...customSpendTypes.filter(t => !defaultSpendTypes.includes(t))]; }
+
 const defaultEarnings = [
-  { date: 'Apr 2026', channel: 'TGFbro', type: 'AdSense', amount: 16474, notes: 'Verified 28-day Mar–Apr 2026' },
-  { date: 'Apr 2026', channel: 'Group',  type: 'Partnership', amount: 30000, notes: 'WhatNot deal — confirmed' },
+  { id:'e1', date: 'Apr 2026', channel: 'TGFbro', type: 'AdSense',     amount: 16474, notes: 'Verified 28-day Mar–Apr 2026' },
+  { id:'e2', date: 'Apr 2026', channel: 'Group',  type: 'Partnership', amount: 30000, notes: 'WhatNot deal — confirmed' },
 ];
 
 let earningsLog = [];
 try {
   const stored = localStorage.getItem('tgf4_earnings');
-  earningsLog = stored ? JSON.parse(stored) : defaultEarnings;
-} catch(e) { earningsLog = defaultEarnings; }
+  earningsLog = stored ? JSON.parse(stored) : defaultEarnings.map(e => ({...e}));
+} catch(e) { earningsLog = defaultEarnings.map(e => ({...e})); }
 
+let spendingsLog = [];
+try {
+  const stored = localStorage.getItem('tgf4_spendings');
+  spendingsLog = stored ? JSON.parse(stored) : [];
+} catch(e) { spendingsLog = []; }
+
+// Per-channel monthly targets
+const defaultTargets = { TGFbro: 25000, Group: 50000, Gaming: 5000, Food: 0, Live: 0, Max: 0, 'Troof or Miff': 2000 };
+let channelTargets = {};
+try {
+  const stored = localStorage.getItem('tgf4_targets');
+  channelTargets = stored ? JSON.parse(stored) : {...defaultTargets};
+} catch(e) { channelTargets = {...defaultTargets}; }
+
+// ── Earnings log render
 function renderEarningsLog() {
-  const body = document.getElementById('earnings-log-body');
+  const body  = document.getElementById('earnings-log-body');
+  const empty = document.getElementById('earnings-empty');
   if (!body) return;
-  body.innerHTML = '';
-  earningsLog.forEach((e, i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${e.date}</td><td>${e.channel}</td><td>${e.type}</td>
-      <td style="color:var(--gold);font-weight:700">£${Number(e.amount).toLocaleString()}</td>
-      <td style="color:var(--muted);font-size:12px">${e.notes || ''}</td>
-      <td><button class="edit-btn" onclick="deleteEntry(${i})" title="Remove">🗑</button></td>
-    `;
-    body.appendChild(tr);
-  });
+  if (!earningsLog.length) {
+    body.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+  } else {
+    if (empty) empty.style.display = 'none';
+    body.innerHTML = earningsLog.map((e, i) => `
+      <tr>
+        <td>${e.date}</td><td>${e.channel}</td><td>${e.type}</td>
+        <td style="color:var(--gold);font-weight:700">£${Number(e.amount).toLocaleString()}</td>
+        <td style="color:var(--muted);font-size:12px;max-width:200px;white-space:normal">${e.notes || ''}</td>
+        <td style="display:flex;gap:4px">
+          <button class="edit-btn" onclick="editEarningsEntry(${i})">✏️</button>
+          <button class="edit-btn" onclick="deleteEarningsEntry(${i})" title="Delete">🗑</button>
+        </td>
+      </tr>
+    `).join('');
+  }
   updateChartFromLog();
-  updateFinSummary();
+  renderChannelTargets();
   renderOverviewBreakdown();
-}
-
-function addEarningsEntry() {
-  const date    = document.getElementById('log-date').value.trim() || 'TBD';
-  const channel = document.getElementById('log-channel').value;
-  const type    = document.getElementById('log-type').value;
-  const amount  = parseFloat(document.getElementById('log-amount').value) || 0;
-  const notes   = document.getElementById('log-notes').value.trim();
-  const ts      = new Date().toLocaleString('en-GB');
-  earningsLog.push({ date, channel, type, amount, notes: notes + (notes ? ' · ' : '') + 'Added ' + ts });
-  localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
-  document.getElementById('log-amount').value = '';
-  document.getElementById('log-notes').value  = '';
-  document.getElementById('log-date').value   = '';
-  renderEarningsLog();
   updateRevProgress();
 }
 
-function deleteEntry(i) {
+function deleteEarningsEntry(i) {
   earningsLog.splice(i, 1);
   localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
   renderEarningsLog();
-  updateRevProgress();
 }
 
-const CHANNELS = ['TGFbro', 'Group', 'Gaming', 'Food', 'Live', 'Max', 'Troof or Miff'];
+function logFormHtml(entry, isSpending) {
+  const types = isSpending ? allSpendTypes() : allRevTypes();
+  const typeKey = isSpending ? 'tgf4_spendTypes' : 'tgf4_revTypes';
+  return `
+    <div class="form-row">
+      <div>
+        <label class="form-label">Date</label>
+        <input class="form-input" id="lf-date" value="${entry.date||''}" placeholder="e.g. Apr 2026">
+      </div>
+      <div>
+        <label class="form-label">Channel</label>
+        <select class="form-input" id="lf-channel">
+          ${CHANNELS.map(c => `<option value="${c}" ${entry.channel===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">${isSpending ? 'Category' : 'Type'}</label>
+        <select class="form-input" id="lf-type" onchange="handleCustomType(this,'${typeKey}')">
+          ${types.map(t => `<option value="${t}" ${entry.type===t?'selected':''}>${t}</option>`).join('')}
+          <option value="__custom__">+ Add new type…</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Amount (£)</label>
+        <input class="form-input" id="lf-amount" type="number" min="0" value="${entry.amount||''}">
+      </div>
+    </div>
+    <div id="lf-custom-wrap" style="display:none">
+      <label class="form-label">New type name</label>
+      <input class="form-input" id="lf-custom-type" placeholder="e.g. NFT Drop">
+    </div>
+    <div>
+      <label class="form-label">Notes</label>
+      <input class="form-input" id="lf-notes" value="${(entry.notes||'').replace(/"/g,'&quot;')}" placeholder="Optional">
+    </div>
+  `;
+}
 
+function handleCustomType(sel, storageKey) {
+  const wrap = document.getElementById('lf-custom-wrap');
+  if (sel.value === '__custom__') {
+    wrap.style.display = 'block';
+    document.getElementById('lf-custom-type').focus();
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+function saveLogEntry(entry, isSpending) {
+  const typeEl   = document.getElementById('lf-type');
+  const customEl = document.getElementById('lf-custom-type');
+  let type = typeEl.value;
+  if (type === '__custom__') {
+    type = customEl.value.trim();
+    if (!type) return false;
+    if (isSpending) {
+      if (!customSpendTypes.includes(type)) { customSpendTypes.push(type); localStorage.setItem('tgf4_spendTypes', JSON.stringify(customSpendTypes)); }
+    } else {
+      if (!customRevTypes.includes(type)) { customRevTypes.push(type); localStorage.setItem('tgf4_revTypes', JSON.stringify(customRevTypes)); }
+    }
+  }
+  entry.date    = document.getElementById('lf-date').value.trim() || 'TBD';
+  entry.channel = document.getElementById('lf-channel').value;
+  entry.type    = type;
+  entry.amount  = parseFloat(document.getElementById('lf-amount').value) || 0;
+  entry.notes   = document.getElementById('lf-notes').value.trim();
+  return true;
+}
+
+function openAddEarningsModal() {
+  const entry = { id: 'e'+Date.now(), date:'', channel:'TGFbro', type:'AdSense', amount:'', notes:'' };
+  openModal('Add Earnings Entry', logFormHtml(entry, false), () => {
+    if (!saveLogEntry(entry, false)) return;
+    earningsLog.push(entry);
+    localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
+    renderEarningsLog();
+    closeModal();
+  }, 'Add');
+}
+
+function editEarningsEntry(i) {
+  const entry = earningsLog[i];
+  openModal('Edit Earnings Entry', logFormHtml({...entry}, false), () => {
+    if (!saveLogEntry(entry, false)) return;
+    localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
+    renderEarningsLog();
+    closeModal();
+  });
+}
+
+// ── Spendings log render
+function renderSpendingsLog() {
+  const body  = document.getElementById('spendings-log-body');
+  const empty = document.getElementById('spendings-empty');
+  if (!body) return;
+  if (!spendingsLog.length) {
+    body.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+  } else {
+    if (empty) empty.style.display = 'none';
+    body.innerHTML = spendingsLog.map((s, i) => `
+      <tr>
+        <td>${s.date}</td><td>${s.channel}</td><td>${s.type}</td>
+        <td style="color:var(--red);font-weight:700">–£${Number(s.amount).toLocaleString()}</td>
+        <td style="color:var(--muted);font-size:12px;max-width:200px;white-space:normal">${s.notes || ''}</td>
+        <td style="display:flex;gap:4px">
+          <button class="edit-btn" onclick="editSpendingEntry(${i})">✏️</button>
+          <button class="edit-btn" onclick="deleteSpendingEntry(${i})" title="Delete">🗑</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+  updateChartFromLog();
+}
+
+function openAddSpendingModal() {
+  const entry = { id: 's'+Date.now(), date:'', channel:'TGFbro', type:'Staff', amount:'', notes:'' };
+  openModal('Add Spending', logFormHtml(entry, true), () => {
+    if (!saveLogEntry(entry, true)) return;
+    spendingsLog.push(entry);
+    localStorage.setItem('tgf4_spendings', JSON.stringify(spendingsLog));
+    renderSpendingsLog();
+    closeModal();
+  }, 'Add');
+}
+
+function editSpendingEntry(i) {
+  const entry = spendingsLog[i];
+  openModal('Edit Spending', logFormHtml({...entry}, true), () => {
+    if (!saveLogEntry(entry, true)) return;
+    localStorage.setItem('tgf4_spendings', JSON.stringify(spendingsLog));
+    renderSpendingsLog();
+    closeModal();
+  });
+}
+
+function deleteSpendingEntry(i) {
+  spendingsLog.splice(i, 1);
+  localStorage.setItem('tgf4_spendings', JSON.stringify(spendingsLog));
+  renderSpendingsLog();
+}
+
+// ── Channel targets
+function renderChannelTargets() {
+  const body = document.getElementById('channel-targets-body');
+  if (!body) return;
+  const revByChannel = {};
+  earningsLog.forEach(e => { revByChannel[e.channel] = (revByChannel[e.channel]||0) + Number(e.amount); });
+  let groupTotal = 0;
+  body.innerHTML = CHANNELS.map(ch => {
+    const target = channelTargets[ch] || 0;
+    const actual = revByChannel[ch] || 0;
+    const pct    = target > 0 ? Math.min(100, Math.round(actual / target * 100)) : 0;
+    groupTotal  += target;
+    return `
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:13px;font-weight:600">${ch}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:var(--muted)">£${actual.toLocaleString()} / </span>
+            <span style="font-size:12px;color:var(--gold);font-weight:700;cursor:pointer" onclick="editChannelTarget('${ch}')" title="Edit target">£${target.toLocaleString()} ✏️</span>
+          </div>
+        </div>
+        <div class="progress-wrap" style="height:5px"><div class="progress-bar" style="width:${pct}%;background:${pct>=100?'var(--green)':pct>50?'var(--gold)':'var(--amber)'}"></div></div>
+      </div>
+    `;
+  }).join('');
+  const totalEl = document.getElementById('targets-total');
+  if (totalEl) totalEl.textContent = '£' + groupTotal.toLocaleString();
+}
+
+function editChannelTarget(ch) {
+  openModal(`Edit Target — ${ch}`, `
+    <div>
+      <label class="form-label">Monthly Revenue Target (£)</label>
+      <input class="form-input" id="ct-val" type="number" min="0" value="${channelTargets[ch]||0}">
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px">This is the fixed monthly target for <strong>${ch}</strong>. The group total updates automatically.</p>
+  `, () => {
+    channelTargets[ch] = parseFloat(document.getElementById('ct-val').value) || 0;
+    localStorage.setItem('tgf4_targets', JSON.stringify(channelTargets));
+    renderChannelTargets();
+    updateRevProgress();
+    closeModal();
+  }, 'Save Target');
+}
+
+// ── Chart update
 function updateChartFromLog() {
   if (!window.revenueChart) return;
-  const data = [0, 0, 0, 0, 0, 0, 0];
+  const revData   = new Array(CHANNELS.length).fill(0);
+  const spendData = new Array(CHANNELS.length).fill(0);
   earningsLog.forEach(e => {
     const idx = CHANNELS.findIndex(c => c.toLowerCase() === e.channel.toLowerCase());
-    if (idx >= 0) data[idx] += Number(e.amount);
+    if (idx >= 0) revData[idx] += Number(e.amount);
   });
-  window.revenueChart.data.datasets[0].data = data;
+  spendingsLog.forEach(s => {
+    const idx = CHANNELS.findIndex(c => c.toLowerCase() === s.channel.toLowerCase());
+    if (idx >= 0) spendData[idx] -= Number(s.amount); // negative for chart
+  });
+  window.revenueChart.data.datasets[0].data = revData;
+  window.revenueChart.data.datasets[1].data = spendData;
   window.revenueChart.update();
-}
-
-function updateFinSummary() {
-  const summary = document.getElementById('fin-channel-summary');
-  if (!summary) return;
-  const totals = {};
-  earningsLog.forEach(e => {
-    const ch = e.channel;
-    totals[ch] = (totals[ch] || 0) + Number(e.amount);
-  });
-  const total = Object.values(totals).reduce((a,b) => a+b, 0);
-  summary.innerHTML = Object.entries(totals).map(([ch, amt]) => `
-    <div class="fin-log-item">
-      <div><div class="fin-log-channel">${ch}</div></div>
-      <div class="fin-log-amount">£${amt.toLocaleString()}</div>
-    </div>
-  `).join('') + `<div style="border-top:2px solid var(--border);padding-top:10px;margin-top:6px;display:flex;justify-content:space-between;font-weight:700"><span>Total</span><span style="color:var(--gold)">£${total.toLocaleString()}</span></div>`;
-  // update fin-total
-  const finTotalEl = document.getElementById('fin-total');
-  if (finTotalEl && !localStorage.getItem('tgf4_fin-total')) {
-    finTotalEl.textContent = total.toLocaleString();
-  }
 }
 
 // ══════════════════════════════════════════
@@ -1364,29 +1555,49 @@ function updateFinSummary() {
 function initChart() {
   const ctx = document.getElementById('revenueChart');
   if (!ctx) return;
-  const gold = 'rgba(201,168,76,';
-  const blue = 'rgba(59,130,246,';
   window.revenueChart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: ['TGFbro', 'Group', 'Gaming', 'Food', 'Live', 'Max', 'Troof'],
-      datasets: [{
-        label: 'Revenue (£)',
-        data: [16474, 30000, 0, 0, 0, 0, 0],
-        backgroundColor: [gold+'0.7)',gold+'0.5)',blue+'0.4)',blue+'0.3)',blue+'0.4)',blue+'0.4)',blue+'0.4)'],
-        borderColor:      [gold+'1)',  gold+'0.8)',blue+'0.7)',blue+'0.5)',blue+'0.7)',blue+'0.7)',blue+'0.7)'],
-        borderWidth: 1.5, borderRadius: 6,
-      }]
+      datasets: [
+        {
+          label: 'Revenue',
+          data: [0,0,0,0,0,0,0],
+          backgroundColor: 'rgba(201,168,76,0.75)',
+          borderColor:     'rgba(201,168,76,1)',
+          borderWidth: 1.5, borderRadius: 5,
+        },
+        {
+          label: 'Spending',
+          data: [0,0,0,0,0,0,0],
+          backgroundColor: 'rgba(239,68,68,0.65)',
+          borderColor:     'rgba(239,68,68,1)',
+          borderWidth: 1.5, borderRadius: 5,
+        }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: c => '£' + c.raw.toLocaleString() } }
+        legend: {
+          display: true,
+          labels: { color: '#9ca3af', font: { family: 'Space Grotesk', size: 11 }, boxWidth: 12, padding: 16 }
+        },
+        tooltip: {
+          callbacks: {
+            label: c => {
+              const v = c.raw;
+              return ` ${c.dataset.label}: ${v < 0 ? '-' : ''}£${Math.abs(v).toLocaleString()}`;
+            }
+          }
+        }
       },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280', font: { family: 'Space Grotesk', size: 11 } } },
-        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280', font: { family: 'Space Grotesk', size: 11 }, callback: v => '£' + (v/1000) + 'K' } }
+        y: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#6b7280', font: { family: 'Space Grotesk', size: 11 }, callback: v => (v < 0 ? '-' : '') + '£' + Math.abs(v/1000).toFixed(0) + 'K' }
+        }
       }
     }
   });
@@ -1891,9 +2102,11 @@ function openAddRiskModal() {
 // ══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   restoreEdits();
-  updateRevProgress();
   initChart();
   renderEarningsLog();
+  renderSpendingsLog();
+  renderChannelTargets();
+  updateRevProgress();
   renderStaffTable();
   renderHireTracker();
   renderMilestones('all');
