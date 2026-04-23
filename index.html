@@ -881,6 +881,7 @@ input[type="month"].form-input { color-scheme: dark; }
   <div class="ch-analytics-grid" id="channels-grid">
     <!-- Populated by JS -->
   </div>
+  <div id="ch-history-section" style="display:none;margin-top:24px"></div>
 </section>
 
 <!-- ══════════════ MILESTONES ══════════════ -->
@@ -2748,6 +2749,7 @@ function renderChannelCards() {
             <span style="font-size:11px;color:var(--muted)">${a.cadence}</span>
           </div>
         </div>
+        <button class="btn-secondary" style="font-size:11px;padding:6px 14px" onclick="showChannelHistory('${def.key}')">📈 History</button>
         <button class="btn-primary" style="font-size:11px;padding:6px 14px" onclick="openAnalyticsModal('${def.key}')">📊 Analytics</button>
       </div>
       <div class="progress-wrap" style="margin-top:12px"><div class="progress-bar" style="width:${def.healthPct}%"></div></div>
@@ -3248,6 +3250,318 @@ function deleteDeal(id) {
   dealsData = dealsData.filter(d => d.id !== id);
   saveDeals();
   renderDeals();
+}
+
+// ══════════════════════════════════════════
+//  CHANNEL GROWTH HISTORY
+// ══════════════════════════════════════════
+
+let histKey    = null;
+let histPeriod = '90';
+let _histCharts = {};
+
+function getHistData(key, period) {
+  try { const s = localStorage.getItem(`tgf4_hist_${key}_${period}`); return s ? JSON.parse(s) : null; } catch(e) { return null; }
+}
+function saveHistData(key, period, rows) {
+  localStorage.setItem(`tgf4_hist_${key}_${period}`, JSON.stringify(rows));
+}
+
+function showChannelHistory(key) {
+  histKey = key;
+  const sec = document.getElementById('ch-history-section');
+  if (sec) { sec.style.display = 'block'; setTimeout(() => sec.scrollIntoView({ behavior:'smooth', block:'start' }), 50); }
+  renderHistorySection();
+}
+
+function switchHistPeriod(p) {
+  histPeriod = p;
+  document.querySelectorAll('.hist-period-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('hist-p-'+p); if (btn) btn.classList.add('active');
+  renderHistorySection();
+}
+
+function renderHistorySection() {
+  const sec = document.getElementById('ch-history-section');
+  if (!sec || !histKey) return;
+  const def  = CHANNEL_DEFS.find(d => d.key === histKey);
+  const data = getHistData(histKey, histPeriod);
+
+  // Destroy old charts
+  Object.values(_histCharts).forEach(c => { try { c.destroy(); } catch(e){} });
+  _histCharts = {};
+
+  const tabs = CHANNEL_DEFS.map(d =>
+    `<span style="cursor:pointer;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;${d.key===histKey?'background:rgba(114,194,232,.12);color:#72C2E8;border:1px solid #4A9EC7':'color:#6b7280;border:1px solid #252a38'}" onclick="showChannelHistory('${d.key}')">${d.name}</span>`
+  ).join('');
+
+  const periods = [['90','90 Days'],['365','365 Days']];
+  const periodBtns = periods.map(([p,l]) =>
+    `<button class="cal-view-btn hist-period-btn${histPeriod===p?' active':''}" id="hist-p-${p}" onclick="switchHistPeriod('${p}')">${l}</button>`
+  ).join('');
+
+  const dataStatus = data
+    ? `<span style="font-size:11px;color:#22c55e">✓ ${data.length} days loaded</span>`
+    : `<span style="font-size:11px;color:#6b7280">No data — upload a CSV</span>`;
+
+  let html = `<div class="card" style="padding:20px;margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+      <div>
+        <div style="font-size:18px;font-weight:700">📈 ${def.name} — Growth History</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:3px">Upload a YouTube Studio Channel Overview CSV to populate charts</div>
+      </div>
+      <button class="btn-secondary" style="font-size:12px" onclick="document.getElementById('ch-history-section').style.display='none'">✕ Close</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">${tabs}</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;gap:6px">${periodBtns}</div>
+      <label class="btn-secondary" style="cursor:pointer;font-size:12px;padding:6px 14px;display:inline-block">
+        📁 Upload ${histPeriod}-day CSV
+        <input type="file" id="hist-csv-input" accept=".csv" style="display:none" onchange="handleHistoryCsv('${histKey}','${histPeriod}')">
+      </label>
+      ${dataStatus}
+    </div>
+  </div>`;
+
+  if (!data || !data.length) {
+    html += `<div class="card" style="text-align:center;padding:56px 0;color:#6b7280">
+      <div style="font-size:36px;margin-bottom:12px">📊</div>
+      <div style="font-size:15px;font-weight:600;color:#e8eaf0;margin-bottom:8px">No historical data for ${def.name} (${histPeriod}d)</div>
+      <div style="font-size:12px;margin-bottom:4px">In YouTube Studio → Analytics → Advanced Mode → Export (top right)</div>
+      <div style="font-size:12px">Select the ${histPeriod}-day range, export as CSV, and upload above.</div>
+    </div>`;
+    sec.innerHTML = html; return;
+  }
+
+  const m = computeHistMetrics(data);
+  const dColor = m.subDelta >= 0 ? '#22c55e' : '#ef4444';
+  const dArrow = m.subDelta >= 0 ? '▲' : '▼';
+
+  html += `<div class="grid-4" style="margin-bottom:14px">
+    <div class="stat-card">
+      <div class="stat-label">Subscriber Change</div>
+      <div class="stat-value" style="color:${dColor};font-size:24px">${dArrow} ${Math.abs(m.subDelta).toLocaleString()}</div>
+      <div class="stat-sub">${m.subDeltaPct >= 0?'+':''}${m.subDeltaPct.toFixed(2)}% over ${histPeriod} days</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Views</div>
+      <div class="stat-value">${fmtNum(m.totalViews)}</div>
+      <div class="stat-sub">${fmtNum(Math.round(m.avgDailyViews))} avg/day</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Peak Day</div>
+      <div class="stat-value" style="font-size:20px">${fmtNum(m.peakViews)}</div>
+      <div class="stat-sub">${m.peakDate}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Revenue (${histPeriod}d)</div>
+      <div class="stat-value gold">£${m.totalRevenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      <div class="stat-sub">£${m.avgDailyRevenue.toFixed(2)} avg/day</div>
+    </div>
+  </div>
+  <div class="grid-4" style="margin-bottom:16px">
+    <div class="stat-card">
+      <div class="stat-label">Views Momentum</div>
+      <div class="stat-value" style="font-size:22px;color:${m.momentum>=0?'#22c55e':'#ef4444'}">${m.momentum>=0?'+':''}${m.momentum.toFixed(1)}%</div>
+      <div class="stat-sub">last 7d vs prev 7d</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Best Subscriber Day</div>
+      <div class="stat-value" style="font-size:20px;color:#22c55e">+${m.bestSubDay.toLocaleString()}</div>
+      <div class="stat-sub">${m.bestSubDate}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Subs Gained / Lost</div>
+      <div class="stat-value" style="font-size:18px">${m.totalSubsGained>0?'+'+m.totalSubsGained.toLocaleString():'—'}</div>
+      <div class="stat-sub">${m.totalSubsLost>0?'−'+m.totalSubsLost.toLocaleString()+' lost':''}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Daily Sub Gain</div>
+      <div class="stat-value" style="font-size:20px">${m.avgSubsGained>0?'+'+m.avgSubsGained.toFixed(0):'—'}</div>
+      <div class="stat-sub">subscribers/day</div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px;padding:18px">
+    <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:.7px;text-transform:uppercase;margin-bottom:14px">Subscriber Growth</div>
+    <canvas id="chart-hist-subs" height="70"></canvas>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div class="card" style="padding:18px">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:.7px;text-transform:uppercase;margin-bottom:14px">Daily Views</div>
+      <canvas id="chart-hist-views" height="110"></canvas>
+    </div>
+    <div class="card" style="padding:18px">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:.7px;text-transform:uppercase;margin-bottom:14px">Revenue (£)</div>
+      <canvas id="chart-hist-revenue" height="110"></canvas>
+    </div>
+  </div>`;
+
+  sec.innerHTML = html;
+  setTimeout(() => drawHistCharts(data), 60);
+}
+
+function computeHistMetrics(data) {
+  if (!data.length) return {};
+  const totalViews     = data.reduce((s,r)=>s+(r.views||0),0);
+  const avgDailyViews  = totalViews / data.length;
+  const peakRow        = data.reduce((b,r)=>(r.views||0)>(b.views||0)?r:b, data[0]);
+  const totalRevenue   = data.reduce((s,r)=>s+(r.revenue||0),0);
+  const avgDailyRevenue= totalRevenue / data.length;
+  const totalSubsGained= data.reduce((s,r)=>s+(r.subsGained||0),0);
+  const totalSubsLost  = data.reduce((s,r)=>s+(r.subsLost||0),0);
+  const firstSubs = data[0].subs || 0;
+  const lastSubs  = data[data.length-1].subs || 0;
+  const subDelta  = firstSubs && lastSubs ? lastSubs - firstSubs : totalSubsGained - totalSubsLost;
+  const subDeltaPct = firstSubs > 0 ? (subDelta / firstSubs * 100) : 0;
+  const bestSubRow  = data.reduce((b,r)=>(r.subsGained||0)>(b.subsGained||0)?r:b, data[0]);
+  const last7  = data.slice(-7).reduce((s,r)=>s+(r.views||0),0);
+  const prev7  = data.slice(-14,-7).reduce((s,r)=>s+(r.views||0),0);
+  const momentum = prev7 > 0 ? ((last7-prev7)/prev7*100) : 0;
+  const avgSubsGained = data.length > 0 ? totalSubsGained / data.length : 0;
+  return { totalViews, avgDailyViews, peakViews:peakRow.views||0, peakDate:peakRow.date,
+           totalRevenue, avgDailyRevenue, totalSubsGained, totalSubsLost,
+           subDelta, subDeltaPct, bestSubDay:bestSubRow.subsGained||0, bestSubDate:bestSubRow.date,
+           momentum, avgSubsGained };
+}
+
+function drawHistCharts(data) {
+  const labels   = data.map(r => r.date);
+  const sparse   = data.length > 60;
+  const gridCol  = '#252a38';
+  const tickCol  = '#6b7280';
+  const baseOpts = {
+    responsive: true,
+    plugins: { legend:{ display:false }, tooltip:{ mode:'index', intersect:false } },
+    scales: {
+      x: { ticks:{ color:tickCol, maxTicksLimit:8, font:{size:10} }, grid:{ color:gridCol } },
+      y: { ticks:{ color:tickCol, font:{size:10} }, grid:{ color:gridCol } }
+    }
+  };
+
+  // Subscriber growth line
+  const hasSubs = data.some(r => r.subs > 0);
+  let subVals;
+  if (hasSubs) {
+    subVals = data.map(r => r.subs);
+  } else {
+    let running = 0;
+    subVals = data.map(r => { running += (r.subsGained||0)-(r.subsLost||0); return running; });
+  }
+  const subsEl = document.getElementById('chart-hist-subs');
+  if (subsEl) {
+    _histCharts.subs = new Chart(subsEl.getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets: [{ data:subVals, borderColor:'#72C2E8', backgroundColor:'rgba(114,194,232,.08)', fill:true, borderWidth:2, pointRadius:sparse?0:2, tension:0.3 }] },
+      options: baseOpts
+    });
+  }
+
+  // Daily views bar
+  const viewsEl = document.getElementById('chart-hist-views');
+  if (viewsEl) {
+    _histCharts.views = new Chart(viewsEl.getContext('2d'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data:data.map(r=>r.views||0), backgroundColor:'rgba(59,130,246,.7)', borderColor:'#3b82f6', borderWidth:1, borderRadius:2 }] },
+      options: baseOpts
+    });
+  }
+
+  // Revenue line
+  const revEl = document.getElementById('chart-hist-revenue');
+  if (revEl) {
+    _histCharts.revenue = new Chart(revEl.getContext('2d'), {
+      type: 'line',
+      data: { labels, datasets: [{ data:data.map(r=>r.revenue||0), borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,.08)', fill:true, borderWidth:2, pointRadius:sparse?0:2, tension:0.3 }] },
+      options: baseOpts
+    });
+  }
+}
+
+function handleHistoryCsv(key, period) {
+  const input = document.getElementById('hist-csv-input');
+  if (!input || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const rows = parseHistoryCsv(e.target.result);
+      if (rows.length < 2) throw new Error('Only ' + rows.length + ' data row(s) found');
+      saveHistData(key, period, rows);
+      renderHistorySection();
+    } catch(err) {
+      alert('Could not parse CSV: ' + err.message + '\n\nMake sure this is a YouTube Studio Channel Overview CSV export (Advanced Mode → Export button).');
+    }
+  };
+  reader.readAsText(input.files[0]);
+}
+
+function parseHistoryCsv(csvText) {
+  const lines = csvText.split('\n');
+
+  // Find the header row — first row where col[0] lowercased is 'date'
+  let headerIdx = -1;
+  for (let i = 0; i < Math.min(20, lines.length); i++) {
+    const cols = parseCSVLine(lines[i]);
+    if (cols.length > 1 && cols[0].trim().toLowerCase() === 'date') { headerIdx = i; break; }
+  }
+  // Fallback: find first row where col[0] looks like a date, header is one row before
+  if (headerIdx < 0) {
+    for (let i = 1; i < Math.min(20, lines.length); i++) {
+      const cols = parseCSVLine(lines[i]);
+      if (cols.length > 1 && /^\d{4}-\d{2}-\d{2}$/.test(cols[0].trim())) { headerIdx = i - 1; break; }
+    }
+  }
+  if (headerIdx < 0) throw new Error('Cannot find a "Date" header row');
+
+  const headers = parseCSVLine(lines[headerIdx]).map(h => h.trim().toLowerCase().replace(/\s+/g,' '));
+  const fc = (...keys) => {
+    for (const k of keys) { const i = headers.findIndex(h => h.includes(k.toLowerCase())); if (i >= 0) return i; }
+    return -1;
+  };
+  const cDate = fc('date');
+  const cViews = fc('views');
+  const cSubs  = fc('subscribers', 'subscriber count', 'total subscriber');
+  const cGained= fc('subscribers gained', 'net new subscriber');
+  const cLost  = fc('subscribers lost');
+  const cRev   = fc('estimated revenue', 'revenue');
+  const cWatch = fc('watch time', 'watchtime');
+  const cImpr  = fc('impressions');
+  const cCtr   = fc('click-through', 'ctr');
+  const cAvgDur= fc('average view duration', 'avg view duration');
+
+  const getNum = (row, ci) => {
+    if (ci < 0 || !row[ci]) return 0;
+    return parseFloat(row[ci].toString().replace(/[,%$£\s]/g,'').trim()) || 0;
+  };
+
+  const rows = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const row = parseCSVLine(lines[i]);
+    if (cDate < 0 || !row[cDate]) continue;
+    const dateRaw = row[cDate].trim();
+    if (dateRaw.toLowerCase().includes('total') || dateRaw.toLowerCase().includes('average') || !dateRaw) continue;
+
+    let dateStr = dateRaw;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed)) dateStr = calDateStr(parsed); else continue;
+    }
+
+    rows.push({
+      date:        dateStr,
+      views:       getNum(row, cViews),
+      subs:        getNum(row, cSubs),
+      subsGained:  getNum(row, cGained),
+      subsLost:    getNum(row, cLost),
+      revenue:     getNum(row, cRev),
+      watchTime:   getNum(row, cWatch),
+      impressions: getNum(row, cImpr),
+      ctr:         getNum(row, cCtr),
+      avgDur:      getNum(row, cAvgDur),
+    });
+  }
+  rows.sort((a,b) => new Date(a.date) - new Date(b.date));
+  return rows;
 }
 
 // ══════════════════════════════════════════
