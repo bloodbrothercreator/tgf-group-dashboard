@@ -1611,32 +1611,24 @@ function getRevTarget() {
 }
 
 function updateRevProgress() {
-  const rev = getRevTotal();
-  const tgt = getRevTarget();
-  const pct = Math.min(100, (rev / tgt * 100)).toFixed(1);
+  // Overview KPI — always shows current calendar month
+  const calMonth = getCurrentMonthKey();
+  const rev = getMonthLog(earningsLog, calMonth).reduce((s,e) => s + Number(e.amount), 0);
+  const tgt = (() => { const t = getMonthTargets(calMonth); const s = Object.values(t).reduce((a,b)=>a+Number(b),0); return s>0?s:200000; })();
+  const pct = tgt > 0 ? Math.min(100, (rev / tgt * 100)).toFixed(1) : '0.0';
 
-  // Overview KPI cards
   const revEl = document.getElementById('kpi-revenue');
   const tgtEl = document.getElementById('kpi-target');
   const sub   = document.getElementById('kpi-revenue-sub');
-  const monthLabel = formatMonthLabel(getCurrentMonthKey());
-  const monthEntries = getMonthLog(earningsLog, getCurrentMonthKey()).length;
-  if (revEl) revEl.textContent = rev.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-  if (tgtEl) tgtEl.textContent = tgt.toLocaleString();
-  if (sub)   sub.textContent   = monthEntries > 0 ? monthLabel + ' · ' + monthEntries + ' entries' : monthLabel + ' · No entries yet';
-
   const bar   = document.getElementById('revenue-progress');
   const pctEl = document.getElementById('revenue-pct');
+  const monthLabel   = formatMonthLabel(calMonth);
+  const monthEntries = getMonthLog(earningsLog, calMonth).length;
+  if (revEl) revEl.textContent = rev.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  if (tgtEl) tgtEl.textContent = tgt.toLocaleString();
+  if (sub)   sub.textContent   = monthEntries > 0 ? monthLabel + ' · ' + monthEntries + ' entries' : monthLabel + ' · No entries yet';
   if (bar)   bar.style.width   = pct + '%';
   if (pctEl) pctEl.textContent = pct + '% of target';
-
-  // Financial tracker sync
-  const finTotal = document.getElementById('fin-total');
-  const finGap   = document.getElementById('fin-gap');
-  const finPct   = document.getElementById('fin-pct-sub');
-  if (finTotal) finTotal.textContent = rev.toLocaleString();
-  if (finGap)   finGap.textContent   = '£' + Math.max(0, tgt - rev).toLocaleString();
-  if (finPct)   finPct.textContent   = pct + '% of £' + (tgt/1000).toFixed(0) + 'K target achieved';
 
   renderOverviewBreakdown();
 }
@@ -1786,8 +1778,8 @@ function renderMonthView() {
   renderEarningsLog();
   renderSpendingsLog();
   updateChartFromLog();
-  // Update projected vs actual breakdown for the current month
-  if (typeof updatePvaChart === 'function') updatePvaChart();
+  if (typeof updatePvaChart     === 'function') updatePvaChart();
+  if (typeof updatePvaBreakdown === 'function') updatePvaBreakdown(currentMonth);
 }
 
 // ══════════════════════════════════════════
@@ -2207,6 +2199,11 @@ const hireStatusConfig = {
 };
 
 function renderHireTracker() {
+  // Sync open hire count to overview KPI
+  const openCount = hiresData.filter(h => h.status === 'open' || h.status === 'interviewing').length;
+  const kpiHires = document.getElementById('kpi-hires');
+  if (kpiHires) kpiHires.textContent = openCount;
+
   const tbody = document.getElementById('hires-tbody');
   if (!tbody) return;
 
