@@ -1608,7 +1608,7 @@ function getRevTotal() {
 }
 function getRevTarget() {
   const t = getMonthTargets(getCurrentMonthKey());
-  const sum = Object.values(t).reduce((a,b) => a+Number(b), 0);
+  const sum = CHANNELS.reduce((a,ch) => a + Number(t[ch]||0), 0);
   return sum > 0 ? sum : 200000;
 }
 
@@ -1616,7 +1616,7 @@ function updateRevProgress() {
   // Overview KPI — always shows current calendar month
   const calMonth = getCurrentMonthKey();
   const rev = getMonthLog(earningsLog, calMonth).reduce((s,e) => s + Number(e.amount), 0);
-  const tgt = (() => { const t = getMonthTargets(calMonth); const s = Object.values(t).reduce((a,b)=>a+Number(b),0); return s>0?s:200000; })();
+  const tgt = (() => { const t = getMonthTargets(calMonth); const s = CHANNELS.reduce((a,ch)=>a+Number(t[ch]||0),0); return s>0?s:200000; })();
   const pct = tgt > 0 ? Math.min(100, (rev / tgt * 100)).toFixed(1) : '0.0';
 
   const revEl = document.getElementById('kpi-revenue');
@@ -1730,6 +1730,16 @@ try {
   const raw = localStorage.getItem('tgf4_monthlyTargets');
   if (raw) {
     monthlyTargets = JSON.parse(raw);
+    // Strip any stale keys (e.g. 'TGF Group', 'Group') that aren't in CHANNELS —
+    // these caused target totals to be double-counted in charts
+    let dirty = false;
+    Object.keys(monthlyTargets).forEach(month => {
+      const t = monthlyTargets[month];
+      Object.keys(t).forEach(k => {
+        if (!CHANNELS.includes(k)) { delete t[k]; dirty = true; }
+      });
+    });
+    if (dirty) localStorage.setItem('tgf4_monthlyTargets', JSON.stringify(monthlyTargets));
   } else {
     const oldRaw = localStorage.getItem('tgf4_targets');
     monthlyTargets[getCurrentMonthKey()] = oldRaw ? JSON.parse(oldRaw) : {...defaultTargets};
@@ -2630,7 +2640,7 @@ function updatePvaChart() {
   const months = Array.from(monthSet).sort();
   const targets = months.map(m => {
     const t = getMonthTargets(m);
-    return Object.values(t).reduce((a,b) => a + Number(b), 0);
+    return CHANNELS.reduce((a,ch) => a + Number(t[ch]||0), 0);
   });
   const actuals = months.map(m => {
     return getMonthLog(earningsLog, m).reduce((s,e) => s + Number(e.amount), 0);
