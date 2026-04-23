@@ -3529,43 +3529,41 @@ function renderHistorySection() {
   const dColor = m.subDelta >= 0 ? '#22c55e' : '#ef4444';
   const dArrow = m.subDelta >= 0 ? '▲' : '▼';
 
-  html += `<div class="grid-4" style="margin-bottom:14px">
-    <div class="stat-card">
-      <div class="stat-label">Subscriber Change</div>
-      <div class="stat-value" style="color:${dColor};font-size:24px">${dArrow} ${Math.abs(m.subDelta).toLocaleString()}</div>
-      <div class="stat-sub">${m.subDeltaPct >= 0?'+':''}${m.subDeltaPct.toFixed(2)}% over ${data.length} days</div>
+  html += `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:16px">
+    <div class="stat-card" style="padding:12px 10px">
+      <div class="stat-label" style="font-size:9px">Subscriber Change</div>
+      <div class="stat-value" style="color:${dColor};font-size:18px;line-height:1.2">${dArrow} ${Math.abs(m.subDelta).toLocaleString()}</div>
+      <div class="stat-sub" style="font-size:10px">${m.subDeltaPct >= 0?'+':''}${m.subDeltaPct.toFixed(2)}% / ${data.length}d</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Total Views</div>
-      <div class="stat-value">${fmtNum(m.totalViews)}</div>
-      <div class="stat-sub">${fmtNum(Math.round(m.avgDailyViews))} avg/day</div>
+    <div class="stat-card" style="padding:12px 10px">
+      <div class="stat-label" style="font-size:9px">Total Views</div>
+      <div class="stat-value" style="font-size:18px;line-height:1.2">${fmtNum(m.totalViews)}</div>
+      <div class="stat-sub" style="font-size:10px">${fmtNum(Math.round(m.avgDailyViews))} avg/day</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Peak Day</div>
-      <div class="stat-value" style="font-size:20px">${fmtNum(m.peakViews)}</div>
-      <div class="stat-sub">${m.peakDate}</div>
+    <div class="stat-card" style="padding:12px 10px">
+      <div class="stat-label" style="font-size:9px">Peak Day</div>
+      <div class="stat-value" style="font-size:18px;line-height:1.2">${fmtNum(m.peakViews)}</div>
+      <div class="stat-sub" style="font-size:10px">${m.peakDate}</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Revenue (${data.length}d)</div>
-      <div class="stat-value gold">£${m.totalRevenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
-      <div class="stat-sub">£${m.avgDailyRevenue.toFixed(2)} avg/day</div>
+    <div class="stat-card" style="padding:12px 10px">
+      <div class="stat-label" style="font-size:9px">Revenue (${data.length}d)</div>
+      <div class="stat-value gold" style="font-size:18px;line-height:1.2">£${m.totalRevenue >= 1000 ? (m.totalRevenue/1000).toFixed(1)+'K' : m.totalRevenue.toFixed(2)}</div>
+      <div class="stat-sub" style="font-size:10px">£${m.avgDailyRevenue.toFixed(2)}/day</div>
     </div>
-  </div>
-  <div class="grid-3" style="margin-bottom:16px">
-    <div class="stat-card">
-      <div class="stat-label">Best Subscriber Day</div>
-      <div class="stat-value" style="font-size:20px;color:#22c55e">+${m.bestSubDay.toLocaleString()}</div>
-      <div class="stat-sub">${m.bestSubDate}</div>
+    <div class="stat-card" style="padding:12px 10px">
+      <div class="stat-label" style="font-size:9px">Best Sub Day</div>
+      <div class="stat-value" style="font-size:18px;line-height:1.2;color:#22c55e">+${m.bestSubDay.toLocaleString()}</div>
+      <div class="stat-sub" style="font-size:10px">${m.bestSubDate}</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Subs Gained / Lost</div>
-      <div class="stat-value" style="font-size:18px">${m.totalSubsGained>0?'+'+m.totalSubsGained.toLocaleString():'—'}</div>
-      <div class="stat-sub">${m.totalSubsLost>0?'−'+m.totalSubsLost.toLocaleString()+' lost':''}</div>
+    <div class="stat-card" style="padding:12px 10px">
+      <div class="stat-label" style="font-size:9px">Subs Gained / Lost</div>
+      <div class="stat-value" style="font-size:18px;line-height:1.2">${m.totalSubsGained>0?'+'+m.totalSubsGained.toLocaleString():'—'}</div>
+      <div class="stat-sub" style="font-size:10px">${m.totalSubsLost>0?'−'+m.totalSubsLost.toLocaleString()+' lost':''}</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Avg Daily Sub Gain</div>
-      <div class="stat-value" style="font-size:20px">${m.avgSubsGained>0?'+'+m.avgSubsGained.toFixed(0):'—'}</div>
-      <div class="stat-sub">subscribers/day</div>
+    <div class="stat-card" style="padding:12px 10px">
+      <div class="stat-label" style="font-size:9px">Avg Daily Sub Gain</div>
+      <div class="stat-value" style="font-size:18px;line-height:1.2">${m.avgSubsGained>0?'+'+m.avgSubsGained.toFixed(0):'—'}</div>
+      <div class="stat-sub" style="font-size:10px">subs/day</div>
     </div>
   </div>
   <div class="card" style="margin-bottom:16px;padding:18px">
