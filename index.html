@@ -1861,9 +1861,7 @@ function renderEarningsLog() {
 
 function deleteEarningsEntry(i) {
   earningsLog.splice(i,1);
-  localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
-  renderEarningsLog();
-  renderChannelTargets();
+  refreshAfterEarningsChange();
 }
 
 // ══════════════════════════════════════════
@@ -1964,13 +1962,23 @@ function saveLogEntry(entry, isSpending) {
   return true;
 }
 
+function refreshAfterEarningsChange() {
+  localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
+  renderEarningsLog();
+  renderChannelTargets();
+  updateRevProgress();
+  updateChartFromLog();
+  if (typeof updatePvaChart     === 'function') updatePvaChart();
+  if (typeof updatePvaBreakdown === 'function') updatePvaBreakdown(currentMonth);
+}
+
 function openAddEarningsModal() {
   const e = { id:'e'+Date.now(), date:currentMonth, channel:'TGFbro', type:'AdSense', amount:'', notes:'' };
   openModal('Add Earnings Entry', logFormHtml(e,false), () => {
     if (!saveLogEntry(e,false)) return;
     earningsLog.push(e);
-    localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
-    renderEarningsLog(); renderChannelTargets(); closeModal();
+    refreshAfterEarningsChange();
+    closeModal();
   }, 'Add');
 }
 
@@ -1978,8 +1986,8 @@ function editEarningsEntry(i) {
   const e = earningsLog[i];
   openModal('Edit Entry', logFormHtml({...e},false), () => {
     if (!saveLogEntry(e,false)) return;
-    localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
-    renderEarningsLog(); renderChannelTargets(); closeModal();
+    refreshAfterEarningsChange();
+    closeModal();
   });
 }
 
