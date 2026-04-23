@@ -378,6 +378,20 @@ input[type="month"].form-input { color-scheme: dark; }
 .deal-tag.recur { border-color: rgba(59,130,246,.4); color: var(--blue); }
 .deal-card-action { font-size: 11px; color: var(--muted); margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--border); line-height: 1.4; }
 
+/* ── ORG HIRE STATUS BADGES ── */
+.org-hire-status { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
+.hire-priority { font-size: 9px; font-weight: 700; letter-spacing: .4px; border-radius: 4px; padding: 2px 6px; text-transform: uppercase; }
+.hire-priority.p1 { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+.hire-priority.p2 { background: rgba(245,158,11,.15); color: var(--amber); border: 1px solid rgba(245,158,11,.3); }
+.hire-priority.p3 { background: rgba(59,130,246,.15); color: var(--blue); border: 1px solid rgba(59,130,246,.3); }
+.hire-priority.p4 { background: rgba(107,114,128,.1); color: var(--muted); border: 1px solid var(--border); }
+.hire-status-badge { font-size: 9px; font-weight: 700; letter-spacing: .4px; border-radius: 4px; padding: 2px 6px; text-transform: uppercase; }
+.hire-status-badge.open     { background: rgba(239,68,68,.12); color: var(--red); border: 1px solid rgba(239,68,68,.25); }
+.hire-status-badge.pipeline { background: rgba(245,158,11,.12); color: var(--amber); border: 1px solid rgba(245,158,11,.25); }
+.hire-status-badge.hired    { background: rgba(34,197,94,.12); color: var(--green); border: 1px solid rgba(34,197,94,.25); }
+.hire-goto { font-size: 9px; color: var(--gold); cursor: pointer; margin-left: auto; font-weight: 600; white-space: nowrap; }
+.hire-goto:hover { text-decoration: underline; }
+
 /* Stage pill colours */
 .stage-Prospecting { color: var(--muted); }
 .stage-In-Talks    { color: var(--blue); }
@@ -1067,16 +1081,51 @@ function renderBranch(node, allNodes) {
   </div>`;
 }
 
+function getLinkedHire(node) {
+  if (node.type !== 'hire') return null;
+  // Explicit link takes priority
+  if (node.hireId) return hiresData.find(h => h.id === node.hireId) || null;
+  // Fuzzy match: normalize role to lowercase words, check containment
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  const nRole = norm(node.role);
+  return hiresData.find(h => {
+    const hRole = norm(h.role);
+    return nRole.includes(hRole) || hRole.includes(nRole) ||
+      nRole.split(' ').filter(w=>w.length>3).some(w => hRole.includes(w));
+  }) || null;
+}
+
 function renderOrgBox(node) {
   const cls = { founder:'org-founder', bbm:'org-bbm', tgf:'org-tgf', hire:'org-hire' }[node.type] || '';
-  const typeLabel = { founder:'Founder / Principal', bbm:'BBM · Central', tgf:'TGF Employed', hire:'Open Hire' }[node.type] || '';
   const typeColor = { founder:'var(--gold)', bbm:'var(--blue)', tgf:'var(--green)', hire:'var(--red)' }[node.type] || 'var(--muted)';
+
+  let hireStatusHtml = '';
+  if (node.type === 'hire') {
+    const hire = getLinkedHire(node);
+    if (hire) {
+      const priLabel = { p1:'P1 Urgent', p2:'P2 High', p3:'P3 Standard', p4:'P4 Planned' }[hire.priority] || hire.priority;
+      const statusLabel = { open:'Open', pipeline:'In Pipeline', hired:'Hired ✓', offered:'Offer Made', interviewing:'Interviewing' }[hire.status] || hire.status;
+      hireStatusHtml = `<div class="org-hire-status">
+        <span class="hire-priority ${hire.priority}">${priLabel}</span>
+        <span class="hire-status-badge ${hire.status === 'hired' ? 'hired' : hire.status === 'pipeline' || hire.status === 'interviewing' || hire.status === 'offered' ? 'pipeline' : 'open'}">${statusLabel}</span>
+        <span class="hire-goto" onclick="event.stopPropagation();navById('hires')">→ Tracker</span>
+      </div>`;
+    } else {
+      hireStatusHtml = `<div class="org-hire-status"><span class="hire-status-badge open">Not linked</span></div>`;
+    }
+  }
+
+  const typeLabel = node.type === 'hire'
+    ? (getLinkedHire(node) ? 'Open Hire' : 'Open Hire')
+    : { founder:'Founder / Principal', bbm:'BBM · Central', tgf:'TGF Employed' }[node.type] || '';
+
   return `<div class="org-node-box ${cls}" onclick="editOrgNode('${node.id}')">
     <div class="oname">${node.name}</div>
     <div class="orole">${node.role}</div>
     <div class="otype" style="color:${typeColor}">${typeLabel}</div>
     ${node.salary ? `<div class="osalary">£${Number(node.salary).toLocaleString()}/mo</div>` : ''}
     ${node.note ? `<div class="onote">${node.note}</div>` : ''}
+    ${hireStatusHtml}
   </div>`;
 }
 
@@ -1119,6 +1168,14 @@ function orgFormHtml(node) {
       <div class="form-field"><label>Reports To</label><select id="of-reports">${reportOpts}</select></div>
     </div>
     <div class="form-field" style="grid-column:1/-1"><label>Note (optional)</label><input id="of-note" value="${node ? node.note : ''}"></div>
+    ${node && node.type === 'hire' ? `
+    <div class="form-field" style="grid-column:1/-1">
+      <label class="form-label">Link to Hire Tracker entry</label>
+      <select class="form-input" id="of-hireid">
+        <option value="">— Auto-match by role name —</option>
+        ${hiresData.map(h => `<option value="${h.id}" ${node && node.hireId===h.id?'selected':''}>${h.slot} · ${h.role} (${h.status})</option>`).join('')}
+      </select>
+    </div>` : ''}
     ${node ? `<button class="btn-secondary" style="color:var(--red);border-color:var(--red);margin-top:4px" onclick="deleteOrgNode('${node.id}')">Remove from org chart</button>` : ''}
   `;
 }
@@ -1134,6 +1191,8 @@ function editOrgNode(id) {
     node.salary    = parseFloat(document.getElementById('of-salary').value) || 0;
     node.reportsTo = document.getElementById('of-reports').value || null;
     node.note      = document.getElementById('of-note').value.trim();
+    const hireIdEl = document.getElementById('of-hireid');
+    if (hireIdEl) node.hireId = hireIdEl.value || null;
     localStorage.setItem('tgf4_org', JSON.stringify(orgData));
     closeModal();
     renderOrgSection(currentOrgSilo);
