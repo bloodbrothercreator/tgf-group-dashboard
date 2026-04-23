@@ -339,6 +339,53 @@ input[type="month"].form-input { color-scheme: dark; }
 .ch-metric { background: var(--surface2); border-radius: 8px; padding: 8px 12px; }
 .ch-metric .m-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
 .ch-metric .m-val { font-size: 14px; font-weight: 700; color: var(--text); margin-top: 2px; }
+
+/* ── MORNING BRIEFING ── */
+.briefing-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; margin-bottom: 20px; }
+.briefing-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+.briefing-title { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -.2px; }
+.briefing-ts { font-size: 11px; color: var(--muted); }
+.briefing-bullets { display: flex; flex-direction: column; gap: 8px; }
+.briefing-bullet { display: flex; align-items: flex-start; gap: 10px; padding: 9px 14px; background: var(--surface2); border-radius: 8px; border-left: 3px solid var(--border); font-size: 12px; line-height: 1.5; }
+.briefing-bullet.ok   { border-left-color: var(--green); }
+.briefing-bullet.warn { border-left-color: var(--amber); }
+.briefing-bullet.crit { border-left-color: var(--red); }
+.briefing-bullet.info { border-left-color: var(--blue); }
+.briefing-bullet.gold { border-left-color: var(--gold); }
+.briefing-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.briefing-empty { color: var(--muted); font-size: 13px; font-style: italic; padding: 8px 0; }
+
+/* ── BRAND DEAL PIPELINE ── */
+.deal-view-toggle { display: flex; gap: 6px; margin-bottom: 16px; }
+.deal-view-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: inherit; font-size: 12px; font-weight: 600; padding: 6px 16px; cursor: pointer; transition: all .15s; }
+.deal-view-btn:hover { border-color: var(--muted); color: var(--text); }
+.deal-view-btn.active { background: var(--gold-glow); border-color: var(--gold); color: var(--gold); }
+
+/* Kanban */
+.kanban-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.kanban-col { flex: 0 0 210px; min-width: 210px; }
+.kanban-col-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); padding: 8px 12px; background: var(--surface2); border-radius: 8px 8px 0 0; border: 1px solid var(--border); border-bottom: none; display: flex; justify-content: space-between; align-items: center; }
+.kanban-col-header .col-count { background: var(--border); border-radius: 10px; padding: 1px 7px; font-size: 10px; color: var(--text); }
+.kanban-cards { border: 1px solid var(--border); border-radius: 0 0 8px 8px; padding: 8px; background: var(--surface); display: flex; flex-direction: column; gap: 8px; min-height: 80px; }
+.deal-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; cursor: pointer; transition: border-color .15s; }
+.deal-card:hover { border-color: var(--gold-dim); }
+.deal-card-brand { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.deal-card-channel { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+.deal-card-fee { font-size: 14px; font-weight: 700; color: var(--gold); }
+.deal-card-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
+.deal-tag { font-size: 10px; font-weight: 600; border-radius: 4px; padding: 2px 7px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+.deal-tag.excl { border-color: rgba(245,158,11,.4); color: var(--amber); }
+.deal-tag.recur { border-color: rgba(59,130,246,.4); color: var(--blue); }
+.deal-card-action { font-size: 11px; color: var(--muted); margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--border); line-height: 1.4; }
+
+/* Stage pill colours */
+.stage-Prospecting { color: var(--muted); }
+.stage-In-Talks    { color: var(--blue); }
+.stage-Negotiating { color: var(--amber); }
+.stage-Contracted  { color: var(--green); }
+.stage-Live        { color: var(--gold); }
+.stage-Invoiced    { color: #a78bfa; }
+.stage-Paid        { color: var(--green); }
 </style>
 </head>
 <body>
@@ -379,6 +426,9 @@ input[type="month"].form-input { color-scheme: dark; }
   <a class="nav-item" data-section="risks" onclick="nav(this)">
     <span class="icon">⚠</span> Risk Register
   </a>
+  <a class="nav-item" data-section="deals" onclick="nav(this)">
+    <span class="icon">🤝</span> Brand Deals
+  </a>
 
   <div class="sidebar-footer">
     <span class="version">v4.0</span> · Apr 2026<br />
@@ -399,6 +449,20 @@ input[type="month"].form-input { color-scheme: dark; }
   <div class="alert-banner alert-gold">
     <span>🎯</span>
     <span><strong>WhatNot deal confirmed</strong> — £30,000 partnership secured. TGFbro AdSense: £16,474/mo verified (28-day Mar–Apr 2026).</span>
+  </div>
+
+  <!-- MORNING BRIEFING -->
+  <div class="briefing-card">
+    <div class="briefing-header">
+      <span class="briefing-title">📋 Morning Briefing</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="briefing-ts" id="briefing-ts">Not yet generated</span>
+        <button class="btn-primary" style="font-size:11px;padding:5px 14px" onclick="generateBriefing()">↻ Generate</button>
+      </div>
+    </div>
+    <div id="briefing-bullets" class="briefing-bullets">
+      <div class="briefing-empty">Press Generate to get today's briefing.</div>
+    </div>
   </div>
 
   <!-- KPI STAT CARDS -->
@@ -810,6 +874,65 @@ input[type="month"].form-input { color-scheme: dark; }
       <div><span class="pill pill-muted">1–5</span> &nbsp;Low — log only</div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-top:12px">Score = Likelihood (1–5) × Impact (1–5)</p>
+  </div>
+</section>
+
+<!-- ══════════════ BRAND DEALS ══════════════ -->
+<section class="section" id="deals">
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>Brand Deals</h1>
+      <p>Partnership pipeline — from prospecting to paid. Toggle between Kanban and table view.</p>
+    </div>
+    <button class="btn-primary" onclick="openAddDealModal()">+ Add Deal</button>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="grid-4" style="margin-bottom:20px">
+    <div class="stat-card">
+      <div class="stat-label">Total Pipeline</div>
+      <div class="stat-value gold" id="deal-kpi-pipeline">£0</div>
+      <div class="stat-sub" id="deal-kpi-pipeline-sub">All stages combined</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Deals</div>
+      <div class="stat-value" id="deal-kpi-active">0</div>
+      <div class="stat-sub" id="deal-kpi-active-sub">Contracted · Live</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Confirmed Value</div>
+      <div class="stat-value" style="color:var(--green)" id="deal-kpi-confirmed">£0</div>
+      <div class="stat-sub">Contracted + Live + Invoiced</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Recurring Monthly</div>
+      <div class="stat-value" style="color:var(--blue)" id="deal-kpi-recurring">£0</div>
+      <div class="stat-sub" id="deal-kpi-recurring-sub">Monthly recurring deals</div>
+    </div>
+  </div>
+
+  <!-- View toggle -->
+  <div class="deal-view-toggle">
+    <button class="deal-view-btn active" id="view-kanban-btn" onclick="switchDealView('kanban')">⊞ Kanban</button>
+    <button class="deal-view-btn" id="view-table-btn" onclick="switchDealView('table')">☰ Table</button>
+  </div>
+
+  <!-- KANBAN VIEW -->
+  <div id="deals-kanban">
+    <div class="kanban-board" id="kanban-board"><!-- rendered by JS --></div>
+  </div>
+
+  <!-- TABLE VIEW -->
+  <div id="deals-table" style="display:none">
+    <div class="card">
+      <table class="data-table">
+        <thead><tr>
+          <th>Brand</th><th>Channel</th><th>Stage</th><th>Base Fee</th>
+          <th>Exclusivity</th><th>Recurring</th><th>Next Action</th><th></th>
+        </tr></thead>
+        <tbody id="deals-table-body"><!-- rendered by JS --></tbody>
+      </table>
+    </div>
   </div>
 </section>
 
@@ -2411,14 +2534,349 @@ function saveAnalyticsFromModal(chKey) {
 }
 
 // ══════════════════════════════════════════
+//  MORNING BRIEFING
+// ══════════════════════════════════════════
+function generateBriefing() {
+  const bullets = [];
+  const today = new Date();
+  const todayYM = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+
+  // 1. Revenue vs target
+  const monthActual = getMonthLog(earningsLog, todayYM).reduce((s,e) => s+Number(e.amount), 0);
+  const monthTarget = Object.values(getMonthTargets(todayYM)).reduce((a,b) => a+Number(b), 0);
+  if (monthTarget > 0) {
+    const pct = Math.round((monthActual / monthTarget) * 100);
+    const cls = pct >= 80 ? 'ok' : pct >= 40 ? 'warn' : 'crit';
+    const icon = pct >= 80 ? '💰' : pct >= 40 ? '💰' : '⚠️';
+    bullets.push({ cls, icon, text: `<strong>Revenue:</strong> £${monthActual.toLocaleString()} logged this month — ${pct}% of £${monthTarget.toLocaleString()} target.` });
+  } else {
+    const cls = monthActual > 0 ? 'ok' : 'info';
+    bullets.push({ cls, icon: '💰', text: `<strong>Revenue:</strong> £${monthActual.toLocaleString()} logged this month. No target set — <a style="color:var(--gold);cursor:pointer" onclick="navById('financial')">set targets →</a>` });
+  }
+
+  // 2. Critical risks
+  const critRisks = (risksData || []).filter(r => r.score >= 15).sort((a,b) => b.score - a.score);
+  const highRisks  = (risksData || []).filter(r => r.score >= 12 && r.score < 15);
+  if (critRisks.length > 0) {
+    bullets.push({ cls:'crit', icon:'🔴', text: `<strong>${critRisks.length} critical risk${critRisks.length>1?'s':''}</strong> — top: "${critRisks[0].risk}" (score ${critRisks[0].score}). ${highRisks.length > 0 ? highRisks.length+' high risks also active.' : ''}` });
+  } else if (highRisks.length > 0) {
+    bullets.push({ cls:'warn', icon:'🟠', text: `<strong>${highRisks.length} high-priority risk${highRisks.length>1?'s':''}</strong> active — no criticals. Top: "${highRisks[0].risk}" (score ${highRisks[0].score}).` });
+  } else {
+    bullets.push({ cls:'ok', icon:'✅', text: `<strong>Risks:</strong> No critical or high risks. All under control.` });
+  }
+
+  // 3. Overdue milestones
+  const overdue = (milestonesData || []).filter(m => {
+    if (m.status === 'done') return false;
+    const mDate = m.date ? m.date.replace(/^([A-Za-z]+)\s(\d{4})$/, (_, mo, yr) => {
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${yr}-${String(months.indexOf(mo)+1).padStart(2,'0')}`;
+    }) : null;
+    return mDate && mDate < todayYM;
+  });
+  if (overdue.length > 0) {
+    bullets.push({ cls:'warn', icon:'⏰', text: `<strong>${overdue.length} overdue milestone${overdue.length>1?'s':''}</strong> — oldest: "${overdue[0].title}" (${overdue[0].date}).` });
+  } else {
+    bullets.push({ cls:'ok', icon:'✅', text: `<strong>Milestones:</strong> None overdue.` });
+  }
+
+  // 4. P1 hires
+  const p1Open = (hiresData || []).filter(h => h.priority === 'p1' && h.status !== 'hired');
+  if (p1Open.length > 0) {
+    bullets.push({ cls:'crit', icon:'👥', text: `<strong>${p1Open.length} P1 hire${p1Open.length>1?'s':''} outstanding</strong> — ${p1Open.map(h => h.role).join(', ')}.` });
+  } else {
+    const p2 = (hiresData || []).filter(h => h.priority === 'p2' && h.status !== 'hired');
+    bullets.push({ cls: p2.length > 0 ? 'warn' : 'ok', icon:'👥', text: p2.length > 0 ? `<strong>No P1 hires outstanding.</strong> ${p2.length} P2 role${p2.length>1?'s':''} still open.` : `<strong>Hires:</strong> All critical roles filled.` });
+  }
+
+  // 5. Brand deal actions
+  const actionableDeals = (dealsData || []).filter(d => ['Contracted','Live','Negotiating'].includes(d.stage) && d.nextAction);
+  const liveDeals = (dealsData || []).filter(d => ['Contracted','Live'].includes(d.stage));
+  if (actionableDeals.length > 0) {
+    const top = actionableDeals[0];
+    bullets.push({ cls:'gold', icon:'🤝', text: `<strong>${liveDeals.length} active deal${liveDeals.length!==1?'s':''}</strong> — action needed on <strong>${top.brand}</strong>: "${top.nextAction}".` });
+  } else if (liveDeals.length > 0) {
+    bullets.push({ cls:'ok', icon:'🤝', text: `<strong>${liveDeals.length} active brand deal${liveDeals.length!==1?'s':''}.</strong> No immediate actions logged.` });
+  } else {
+    bullets.push({ cls:'info', icon:'🤝', text: `<strong>Brand Deals:</strong> No confirmed deals. Pipeline work recommended.` });
+  }
+
+  // Render
+  const container = document.getElementById('briefing-bullets');
+  container.innerHTML = bullets.map(b => `
+    <div class="briefing-bullet ${b.cls}">
+      <span class="briefing-icon">${b.icon}</span>
+      <span>${b.text}</span>
+    </div>
+  `).join('');
+
+  const now = new Date();
+  const ts = now.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }) + ' · ' + now.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+  document.getElementById('briefing-ts').textContent = `Last generated: ${ts}`;
+
+  // Persist
+  localStorage.setItem('tgf4_briefing', JSON.stringify({ bullets, ts }));
+}
+
+function restoreBriefing() {
+  const saved = localStorage.getItem('tgf4_briefing');
+  if (!saved) return;
+  try {
+    const { bullets, ts } = JSON.parse(saved);
+    const container = document.getElementById('briefing-bullets');
+    if (!container || !bullets) return;
+    container.innerHTML = bullets.map(b => `
+      <div class="briefing-bullet ${b.cls}">
+        <span class="briefing-icon">${b.icon}</span>
+        <span>${b.text}</span>
+      </div>
+    `).join('');
+    const el = document.getElementById('briefing-ts');
+    if (el) el.textContent = `Last generated: ${ts}`;
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
+//  BRAND DEAL PIPELINE
+// ══════════════════════════════════════════
+const DEAL_STAGES = ['Prospecting','In Talks','Negotiating','Contracted','Live','Invoiced','Paid'];
+const STAGE_COLORS = {
+  'Prospecting': 'var(--muted)', 'In Talks': 'var(--blue)', 'Negotiating': 'var(--amber)',
+  'Contracted': 'var(--green)', 'Live': 'var(--gold)', 'Invoiced': '#a78bfa', 'Paid': 'var(--green)'
+};
+
+let dealsData = [];
+let dealView = 'kanban';
+
+function loadDeals() {
+  const saved = localStorage.getItem('tgf4_deals');
+  if (saved) {
+    dealsData = JSON.parse(saved);
+  } else {
+    dealsData = [{
+      id: 'd1', brand: 'WhatNot', channel: 'Group', stage: 'Live',
+      baseFee: 30000, bonusDetails: '', exclusivity: false, exclusivityDetails: '',
+      deliverables: '1× dedicated video + social posts per month',
+      contact: '', paymentSchedule: 'Monthly recurring', nextAction: 'Confirm next month deliverables',
+      recurring: true, recurringNote: 'Monthly — confirmed',
+      startDate: '2026-03', notes: 'WhatNot deal confirmed — £30,000 partnership'
+    }];
+  }
+}
+function saveDeals() { localStorage.setItem('tgf4_deals', JSON.stringify(dealsData)); }
+
+function switchDealView(view) {
+  dealView = view;
+  document.getElementById('deals-kanban').style.display = view === 'kanban' ? '' : 'none';
+  document.getElementById('deals-table').style.display  = view === 'table'  ? '' : 'none';
+  document.getElementById('view-kanban-btn').classList.toggle('active', view === 'kanban');
+  document.getElementById('view-table-btn').classList.toggle('active',  view === 'table');
+}
+
+function renderDeals() {
+  renderDealKPIs();
+  renderKanban();
+  renderDealTable();
+}
+
+function renderDealKPIs() {
+  const pipeline   = dealsData.reduce((s,d) => s + Number(d.baseFee||0), 0);
+  const active     = dealsData.filter(d => ['Contracted','Live'].includes(d.stage));
+  const confirmed  = dealsData.filter(d => ['Contracted','Live','Invoiced','Paid'].includes(d.stage)).reduce((s,d) => s + Number(d.baseFee||0), 0);
+  const recurring  = dealsData.filter(d => d.recurring && ['Contracted','Live'].includes(d.stage)).reduce((s,d) => s + Number(d.baseFee||0), 0);
+  const el = id => document.getElementById(id);
+  if (el('deal-kpi-pipeline'))  el('deal-kpi-pipeline').textContent  = '£' + pipeline.toLocaleString();
+  if (el('deal-kpi-active'))    el('deal-kpi-active').textContent    = active.length;
+  if (el('deal-kpi-active-sub'))el('deal-kpi-active-sub').textContent= active.map(d=>d.brand).join(' · ') || 'None active';
+  if (el('deal-kpi-confirmed')) el('deal-kpi-confirmed').textContent = '£' + confirmed.toLocaleString();
+  if (el('deal-kpi-recurring')) el('deal-kpi-recurring').textContent = '£' + recurring.toLocaleString();
+  if (el('deal-kpi-recurring-sub')) el('deal-kpi-recurring-sub').textContent = dealsData.filter(d=>d.recurring).map(d=>d.brand).join(' · ') || 'None';
+}
+
+function renderKanban() {
+  const board = document.getElementById('kanban-board');
+  if (!board) return;
+  board.innerHTML = DEAL_STAGES.map(stage => {
+    const cards = dealsData.filter(d => d.stage === stage);
+    return `
+      <div class="kanban-col">
+        <div class="kanban-col-header" style="border-top:2px solid ${STAGE_COLORS[stage]}">
+          <span>${stage}</span>
+          <span class="col-count">${cards.length}</span>
+        </div>
+        <div class="kanban-cards">
+          ${cards.length === 0 ? '<div style="font-size:11px;color:var(--muted);padding:8px 4px;text-align:center">Empty</div>' : ''}
+          ${cards.map(d => `
+            <div class="deal-card" onclick="editDeal('${d.id}')">
+              <div class="deal-card-brand">${d.brand}</div>
+              <div class="deal-card-channel">${d.channel}</div>
+              <div class="deal-card-fee">£${Number(d.baseFee||0).toLocaleString()}</div>
+              <div class="deal-card-tags">
+                ${d.recurring  ? '<span class="deal-tag recur">↻ Recurring</span>' : ''}
+                ${d.exclusivity ? '<span class="deal-tag excl">⊘ Exclusive</span>' : ''}
+              </div>
+              ${d.nextAction ? `<div class="deal-card-action">→ ${d.nextAction}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderDealTable() {
+  const tbody = document.getElementById('deals-table-body');
+  if (!tbody) return;
+  if (dealsData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="color:var(--muted);font-size:12px;padding:16px">No deals added yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = dealsData.map(d => `
+    <tr style="cursor:pointer" onclick="editDeal('${d.id}')">
+      <td style="font-weight:600">${d.brand}</td>
+      <td>${d.channel}</td>
+      <td><span style="color:${STAGE_COLORS[d.stage]};font-weight:600">${d.stage}</span></td>
+      <td style="color:var(--gold);font-weight:700">£${Number(d.baseFee||0).toLocaleString()}</td>
+      <td>${d.exclusivity ? '<span style="color:var(--amber)">⊘ Yes</span>' : '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${d.recurring ? '<span style="color:var(--blue)">↻ Yes</span>' : '<span style="color:var(--muted)">—</span>'}</td>
+      <td style="color:var(--muted);font-size:12px;max-width:180px">${d.nextAction || '—'}</td>
+      <td><button class="edit-btn" onclick="event.stopPropagation();deleteDeal('${d.id}')">🗑</button></td>
+    </tr>
+  `).join('');
+}
+
+function dealFormHtml(d) {
+  return `
+    <div class="form-row">
+      <div>
+        <label class="form-label">Brand Name</label>
+        <input class="form-input" id="df-brand" value="${(d.brand||'').replace(/"/g,'&quot;')}" placeholder="e.g. WhatNot, Gymshark">
+      </div>
+      <div>
+        <label class="form-label">Channel</label>
+        <select class="form-input" id="df-channel">
+          ${CHANNELS.map(c=>`<option value="${c}" ${d.channel===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Stage</label>
+        <select class="form-input" id="df-stage">
+          ${DEAL_STAGES.map(s=>`<option value="${s}" ${d.stage===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Base Fee (£)</label>
+        <input class="form-input" id="df-fee" type="number" min="0" step="100" value="${d.baseFee||0}">
+      </div>
+    </div>
+    <div>
+      <label class="form-label">Bonus / Performance Details</label>
+      <input class="form-input" id="df-bonus" value="${(d.bonusDetails||'').replace(/"/g,'&quot;')}" placeholder="e.g. +£5K if views > 1M">
+    </div>
+    <div class="form-row" style="align-items:center">
+      <div>
+        <label class="form-label">Exclusivity</label>
+        <select class="form-input" id="df-excl">
+          <option value="0" ${!d.exclusivity?'selected':''}>No</option>
+          <option value="1" ${d.exclusivity?'selected':''}>Yes</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Exclusivity Details</label>
+        <input class="form-input" id="df-excl-details" value="${(d.exclusivityDetails||'').replace(/"/g,'&quot;')}" placeholder="e.g. No competing apps for 30 days">
+      </div>
+    </div>
+    <div>
+      <label class="form-label">Deliverables</label>
+      <input class="form-input" id="df-deliverables" value="${(d.deliverables||'').replace(/"/g,'&quot;')}" placeholder="e.g. 1× dedicated video + 3 stories">
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Contact Name</label>
+        <input class="form-input" id="df-contact" value="${(d.contact||'').replace(/"/g,'&quot;')}" placeholder="Brand contact name">
+      </div>
+      <div>
+        <label class="form-label">Payment Schedule</label>
+        <input class="form-input" id="df-payment" value="${(d.paymentSchedule||'').replace(/"/g,'&quot;')}" placeholder="e.g. 50% upfront, 50% on delivery">
+      </div>
+    </div>
+    <div class="form-row" style="align-items:center">
+      <div>
+        <label class="form-label">Recurring</label>
+        <select class="form-input" id="df-recurring">
+          <option value="0" ${!d.recurring?'selected':''}>One-off</option>
+          <option value="1" ${d.recurring?'selected':''}>Monthly recurring</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Start Month</label>
+        <input class="form-input" id="df-start" type="month" value="${d.startDate||currentMonth}">
+      </div>
+    </div>
+    <div>
+      <label class="form-label">Next Action</label>
+      <input class="form-input" id="df-action" value="${(d.nextAction||'').replace(/"/g,'&quot;')}" placeholder="e.g. Send contract for review">
+    </div>
+    <div>
+      <label class="form-label">Notes</label>
+      <textarea class="form-input" id="df-notes" rows="2" style="resize:vertical">${d.notes||''}</textarea>
+    </div>
+  `;
+}
+
+function saveDealFromModal(d) {
+  d.brand              = document.getElementById('df-brand').value.trim();
+  d.channel            = document.getElementById('df-channel').value;
+  d.stage              = document.getElementById('df-stage').value;
+  d.baseFee            = parseFloat(document.getElementById('df-fee').value) || 0;
+  d.bonusDetails       = document.getElementById('df-bonus').value.trim();
+  d.exclusivity        = document.getElementById('df-excl').value === '1';
+  d.exclusivityDetails = document.getElementById('df-excl-details').value.trim();
+  d.deliverables       = document.getElementById('df-deliverables').value.trim();
+  d.contact            = document.getElementById('df-contact').value.trim();
+  d.paymentSchedule    = document.getElementById('df-payment').value.trim();
+  d.recurring          = document.getElementById('df-recurring').value === '1';
+  d.startDate          = document.getElementById('df-start').value;
+  d.nextAction         = document.getElementById('df-action').value.trim();
+  d.notes              = document.getElementById('df-notes').value.trim();
+  saveDeals();
+  renderDeals();
+  closeModal();
+}
+
+function editDeal(id) {
+  const d = dealsData.find(x => x.id === id);
+  if (!d) return;
+  openModal(`Edit Deal — ${d.brand}`, dealFormHtml(d), () => saveDealFromModal(d));
+}
+
+function openAddDealModal() {
+  const d = { id:'d'+Date.now(), brand:'', channel:'TGFbro', stage:'Prospecting', baseFee:0, bonusDetails:'', exclusivity:false, exclusivityDetails:'', deliverables:'', contact:'', paymentSchedule:'', recurring:false, startDate:currentMonth, nextAction:'', notes:'' };
+  openModal('New Brand Deal', dealFormHtml(d), () => {
+    if (!document.getElementById('df-brand').value.trim()) return;
+    dealsData.push(d);
+    saveDealFromModal(d);
+  }, 'Add Deal');
+}
+
+function deleteDeal(id) {
+  if (!confirm('Remove this deal from the pipeline?')) return;
+  dealsData = dealsData.filter(d => d.id !== id);
+  saveDeals();
+  renderDeals();
+}
+
+// ══════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   loadChannelAnalytics();
+  loadDeals();
   restoreEdits();
   initChart();
   renderAllTimeKPIs();
-  renderMonthView();       // sets currentMonth labels + renders all monthly views
+  renderMonthView();
   updateRevProgress();
   renderStaffTable();
   renderHireTracker();
@@ -2427,6 +2885,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderRisks();
   renderChannelCards();
   initPvaChart();
+  renderDeals();
+  restoreBriefing();
 });
 </script>
 </body>
