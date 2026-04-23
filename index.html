@@ -874,7 +874,7 @@ input[type="month"].form-input { color-scheme: dark; }
       <p>TGF Group YouTube silos — stats &amp; analytics. Update any channel via the Analytics button.</p>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn-secondary" style="font-size:12px" onclick="openYouTubeSettingsModal()">⚙ API Settings</button>
+      <button class="btn-secondary" style="font-size:12px" onclick="openYouTubeSettingsModal()" id="yt-settings-btn">⚙ YouTube Settings</button>
       <button class="btn-primary" id="yt-sync-btn" onclick="fetchYouTubeStats()">↻ Sync from YouTube</button>
     </div>
   </div>
@@ -2731,7 +2731,10 @@ function renderChannelCards() {
           <div class="channel-name">${def.name}</div>
           <div class="channel-handle">${def.handle}</div>
         </div>
-        <span class="pill ${def.pillClass}">${def.pillLabel}</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          ${a.oauthSynced ? '<span style="font-size:10px;background:#22c55e22;color:#22c55e;border:1px solid #22c55e44;border-radius:4px;padding:2px 6px;font-weight:600">● LIVE</span>' : ''}
+          <span class="pill ${def.pillClass}">${def.pillLabel}</span>
+        </div>
       </div>
       <div class="ch-metrics-row">
         <div class="ch-metric"><div class="m-label">Subscribers</div><div class="m-val">${a.subs || '—'}</div></div>
@@ -3575,55 +3578,196 @@ let ytHandles = (function(){
   // Pre-fill known handles from CHANNEL_DEFS
   return { tgfbro:'TGFbro', gaming:'TGFGaming', troof:'', food:'', live:'', max:'' };
 })();
+let ytOAuthClientId = localStorage.getItem('tgf4_ytOAuthClientId') || '';
+let ytRefreshToken  = localStorage.getItem('tgf4_ytRefreshToken')  || '';
 
 function saveYtSettings() {
-  localStorage.setItem('tgf4_ytApiKey', ytApiKey);
-  localStorage.setItem('tgf4_ytHandles', JSON.stringify(ytHandles));
+  localStorage.setItem('tgf4_ytApiKey',       ytApiKey);
+  localStorage.setItem('tgf4_ytHandles',      JSON.stringify(ytHandles));
+  localStorage.setItem('tgf4_ytOAuthClientId', ytOAuthClientId);
+  // ytRefreshToken saved separately when received via OAuth callback
+}
+
+// ── YouTube OAuth helpers ─────────────────────────────────────────────────────
+function initiateYouTubeOAuth() {
+  if (!ytOAuthClientId) {
+    alert('Enter your OAuth 2.0 Client ID in the field above, then click Connect again.');
+    return;
+  }
+  const redirectUri = 'https://tgf-group-dashboard-9684.vercel.app/api/youtube-auth';
+  const scope = [
+    'https://www.googleapis.com/auth/youtube.readonly',
+    'https://www.googleapis.com/auth/yt-analytics.readonly',
+    'https://www.googleapis.com/auth/yt-analytics-monetary.readonly',
+  ].join(' ');
+  const params = new URLSearchParams({
+    client_id:     ytOAuthClientId,
+    redirect_uri:  redirectUri,
+    response_type: 'code',
+    scope,
+    access_type:   'offline',
+    prompt:        'consent',  // force refresh_token on every connect
+  });
+  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+}
+
+function disconnectYouTube() {
+  if (!confirm('Disconnect YouTube account? Live analytics sync will be disabled. Manually entered data is kept.')) return;
+  ytRefreshToken = '';
+  localStorage.removeItem('tgf4_ytRefreshToken');
+  renderChannelCards();
+  openYouTubeSettingsModal();
+}
+
+// Full analytics sync using OAuth proxy (all metrics including watch time, CTR, revenue)
+async function fetchYouTubeAnalytics() {
+  const btn = document.getElementById('yt-sync-btn');
+  if (btn) { btn.textContent = '⟳ Syncing…'; btn.disabled = true; }
+  setSyncStatus('syncing', 'Syncing YouTube Analytics…');
+
+  const today    = new Date().toISOString().split('T')[0];
+  const since28  = new Date(Date.now() - 28*24*60*60*1000).toISOString().split('T')[0];
+  let synced = 0;
+
+  for (const def of CHANNEL_DEFS) {
+    // Step 1: Resolve channel ID if we don't have it yet
+    let channelId = (channelAnalytics[def.key] || {}).channelId;
+    if (!channelId) {
+      // Try via Data API key (fast) or Analytics proxy (no key needed)
+      const handle = (ytHandles[def.key] || '').replace('@','').trim();
+      if (handle && ytApiKey) {
+        try {
+          const r = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&forHandle=${encodeURIComponent(handle)}&key=${ytApiKey}`);
+          const d = await r.json();
+          if (d.items && d.items[0]) {
+            channelId = d.items[0].id;
+            channelAnalytics[def.key] = {
+              ...(channelAnalytics[def.key] || {}),
+              channelId,
+              subs: fmtNum(parseInt(d.items[0].statistics.subscriberCount || 0)),
+            };
+          }
+        } catch(e) { console.warn('YT channel ID lookup failed for', def.key, e); }
+      }
+    }
+    if (!channelId) continue;  // can't query without a channel ID
+
+    // Step 2: Refresh subscriber count via OAuth proxy (no API key needed)
+    try {
+      const statsRes = await fetch(`/api/youtube-analytics?action=stats&channel_id=${encodeURIComponent(channelId)}&refresh_token=${encodeURIComponent(ytRefreshToken)}`);
+      const statsData = await statsRes.json();
+      if (statsData.items && statsData.items[0]) {
+        const s = statsData.items[0].statistics;
+        channelAnalytics[def.key] = {
+          ...(channelAnalytics[def.key] || {}),
+          channelId,
+          subs: fmtNum(parseInt(s.subscriberCount || 0)),
+        };
+      }
+    } catch(e) { console.warn('Stats fetch failed for', def.key, e); }
+
+    // Step 3: Fetch Analytics API metrics
+    try {
+      const aUrl = `/api/youtube-analytics?action=analytics&channel_id=${encodeURIComponent(channelId)}&refresh_token=${encodeURIComponent(ytRefreshToken)}&start_date=${since28}&end_date=${today}`;
+      const aRes  = await fetch(aUrl);
+      const aData = await aRes.json();
+
+      if (aData.error) {
+        console.warn('Analytics API error for', def.key, aData.error, aData.reason);
+        continue;
+      }
+
+      // Sum all rows (each row = one day)
+      const headers = (aData.columnHeaders || []).map(h => h.name);
+      const rows    = aData.rows || [];
+      const col = name => headers.indexOf(name);
+
+      let totalViews = 0, totalWatchMin = 0, totalSubsGained = 0, totalSubsLost = 0;
+      let totalRevenue = 0, totalImpressions = 0, ctrSum = 0, ctrN = 0, durSum = 0, durN = 0;
+
+      rows.forEach(row => {
+        totalViews      += row[col('views')]                          || 0;
+        totalWatchMin   += row[col('estimatedMinutesWatched')]        || 0;
+        totalSubsGained += row[col('subscribersGained')]              || 0;
+        totalSubsLost   += row[col('subscribersLost')]                || 0;
+        totalRevenue    += row[col('estimatedRevenue')]               || 0;
+        totalImpressions+= row[col('impressions')]                    || 0;
+        const ctrVal = row[col('impressionsClickThroughRate')];
+        if (ctrVal != null) { ctrSum += ctrVal; ctrN++; }
+        const durVal = row[col('averageViewDuration')];
+        if (durVal != null) { durSum += durVal; durN++; }
+      });
+
+      channelAnalytics[def.key] = {
+        ...(channelAnalytics[def.key] || {}),
+        channelId,
+        views28:      totalViews,
+        watchTimeHrs: parseFloat((totalWatchMin / 60).toFixed(2)),
+        subsGained:   totalSubsGained,
+        subsLost:     totalSubsLost,
+        revenue:      parseFloat(totalRevenue.toFixed(2)),
+        impressions:  totalImpressions,
+        ctr:          ctrN > 0 ? parseFloat((ctrSum / ctrN * 100).toFixed(2)) : 0,
+        avgViewDur:   durN > 0 ? Math.round(durSum / durN) : 0,
+        lastUpdated:  new Date().toISOString(),
+        oauthSynced:  true,
+      };
+      synced++;
+    } catch(e) { console.warn('Analytics fetch error for', def.key, e); }
+  }
+
+  saveChannelAnalytics();
+  renderChannelCards();
+  setSyncStatus('ok', `Analytics synced ✓`);
+  if (btn) {
+    btn.textContent = synced > 0 ? `✓ Synced ${synced} channel${synced>1?'s':''}` : '↻ Sync from YouTube';
+    btn.disabled = false;
+    if (synced > 0) setTimeout(() => { if(btn) btn.textContent = '↻ Sync from YouTube'; }, 3000);
+  }
 }
 
 async function fetchYouTubeStats() {
-  if (!ytApiKey) { openYouTubeSettingsModal(); return; }
+  // Branch: OAuth connected → full Analytics API; API key only → Data API (subs + estimated views)
+  if (ytRefreshToken) { await fetchYouTubeAnalytics(); return; }
+  if (!ytApiKey)      { openYouTubeSettingsModal(); return; }
+
   const btn = document.getElementById('yt-sync-btn');
   if (btn) { btn.textContent = '⟳ Syncing…'; btn.disabled = true; }
   setSyncStatus('syncing','Syncing YouTube…');
 
-  let synced = 0, quota = 0;
+  let synced = 0;
   for (const def of CHANNEL_DEFS) {
     const handle = (ytHandles[def.key] || '').replace('@','').trim();
     if (!handle) continue;
     try {
-      // Channel stats
       const chRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&forHandle=${encodeURIComponent(handle)}&key=${ytApiKey}`);
       const chData = await chRes.json();
       if (chData.error || !chData.items || !chData.items[0]) continue;
       const ch   = chData.items[0];
       const stat = ch.statistics;
-      quota += 1;
 
-      // Videos published in last 28 days
+      // Videos published in last 28 days (for estimated views)
       const since28 = new Date(Date.now() - 28*24*60*60*1000).toISOString();
-      const srRes = await fetch(`https://www.googleapis.com/youtube/v3/search?channelId=${ch.id}&type=video&order=date&maxResults=50&publishedAfter=${since28}&part=id&key=${ytApiKey}`);
-      const srData = await srRes.json();
-      quota += 100;
+      const srRes   = await fetch(`https://www.googleapis.com/youtube/v3/search?channelId=${ch.id}&type=video&order=date&maxResults=50&publishedAfter=${since28}&part=id&key=${ytApiKey}`);
+      const srData  = await srRes.json();
 
-      let views28 = 0, subsGained = 0;
+      let views28 = 0;
       if (srData.items && srData.items.length > 0) {
         const ids = srData.items.map(i => i.id.videoId).filter(Boolean).join(',');
         if (ids) {
-          const vRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${ids}&part=statistics&key=${ytApiKey}`);
+          const vRes  = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${ids}&part=statistics&key=${ytApiKey}`);
           const vData = await vRes.json();
-          quota += 1;
-          (vData.items || []).forEach(v => {
-            views28 += parseInt(v.statistics.viewCount || 0);
-          });
+          (vData.items || []).forEach(v => { views28 += parseInt(v.statistics.viewCount || 0); });
         }
       }
 
       channelAnalytics[def.key] = {
         ...(channelAnalytics[def.key] || {}),
+        channelId:   ch.id,  // store for Analytics API later
         subs:        fmtNum(parseInt(stat.subscriberCount || 0)),
-        views28:     views28,
+        views28,
         lastUpdated: new Date().toISOString(),
+        oauthSynced: false,
       };
       synced++;
     } catch(e) { console.warn('YT fetch error for', def.key, e); }
@@ -3640,30 +3784,56 @@ async function fetchYouTubeStats() {
 }
 
 function openYouTubeSettingsModal() {
+  const isConnected = !!ytRefreshToken;
   const rows = CHANNEL_DEFS.map(def => `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
       <span style="width:110px;font-size:12px;font-weight:600;color:var(--text)">${def.name}</span>
       <input class="form-input" id="yt-handle-${def.key}" type="text" placeholder="YouTube handle (e.g. TGFbro)" value="${ytHandles[def.key]||''}" style="flex:1">
     </div>`).join('');
 
+  const oauthSection = isConnected
+    ? `<div style="background:#0f2a1a;border:1px solid #22c55e44;border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:space-between">
+         <div>
+           <div style="font-size:13px;font-weight:700;color:#22c55e">✓ YouTube Account Connected</div>
+           <div style="font-size:11px;color:var(--muted);margin-top:3px">Full analytics sync active — watch time, impressions, CTR and revenue auto-populated.</div>
+         </div>
+         <button class="btn-secondary" style="font-size:11px;color:#ef4444;border-color:#ef44441a" onclick="closeModal();disconnectYouTube()">Disconnect</button>
+       </div>`
+    : `<div style="background:var(--surface2);border-radius:8px;padding:14px">
+         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">🔗 Connect YouTube Account (Recommended)</div>
+         <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Enables full Analytics API access — watch time, impressions, CTR, revenue, and subscriber gains auto-sync for all your managed channels.</p>
+         <label class="form-label">OAuth 2.0 Client ID</label>
+         <input class="form-input" id="yt-oauth-client-id" type="text" placeholder="xxxx.apps.googleusercontent.com" value="${ytOAuthClientId}" style="margin-bottom:8px">
+         <p style="font-size:11px;color:var(--muted);margin:0 0 10px">
+           Setup: <strong style="color:var(--text)">console.cloud.google.com</strong> → APIs &amp; Services → Credentials → Create OAuth 2.0 Client ID (Web App) →
+           add Authorized redirect URI: <code style="color:var(--gold);font-size:10px">https://tgf-group-dashboard-9684.vercel.app/api/youtube-auth</code><br>
+           Then add <code style="color:var(--gold);font-size:10px">YOUTUBE_CLIENT_ID</code> and <code style="color:var(--gold);font-size:10px">YOUTUBE_CLIENT_SECRET</code> to Vercel env vars.
+         </p>
+         <button class="btn-primary" style="width:100%" onclick="ytOAuthClientId=(document.getElementById('yt-oauth-client-id').value||'').trim();saveYtSettings();closeModal();initiateYouTubeOAuth()">🔗 Connect YouTube Account</button>
+       </div>`;
+
   const html = `<div style="display:flex;flex-direction:column;gap:14px">
+    ${oauthSection}
+    <hr style="border:none;border-top:1px solid var(--border);margin:0">
     <div>
-      <label class="form-label">YouTube Data API v3 Key</label>
+      <label class="form-label">YouTube Data API v3 Key <span style="color:var(--muted);font-weight:400">(for subscriber count when not using OAuth)</span></label>
       <input class="form-input" id="yt-api-key" type="text" placeholder="AIza…" value="${ytApiKey}">
       <p style="font-size:11px;color:var(--muted);margin-top:5px">Get one at console.cloud.google.com → APIs &amp; Services → Credentials</p>
     </div>
     <div>
       <label class="form-label">YouTube Handles (without @)</label>
-      <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave blank for channels not yet live on YouTube.</p>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Used to look up channel IDs on first sync. Leave blank for channels not yet on YouTube.</p>
       ${rows}
     </div>
     <div style="background:var(--surface2);border-radius:8px;padding:12px;font-size:12px;color:var(--muted)">
-      💡 Each sync uses ~102 quota units per channel. Daily quota is 10,000 — plenty for all 6 channels many times over.
+      💡 With OAuth connected, full analytics (watch time, impressions, CTR, revenue) sync automatically. Without OAuth, only subscriber count and estimated 28-day views are available.
     </div>
   </div>`;
 
-  openModal('YouTube API Settings', html, () => {
-    ytApiKey = (document.getElementById('yt-api-key').value || '').trim();
+  openModal('YouTube Settings', html, () => {
+    ytApiKey        = (document.getElementById('yt-api-key').value        || '').trim();
+    const cid = document.getElementById('yt-oauth-client-id');
+    if (cid) ytOAuthClientId = (cid.value || '').trim();
     CHANNEL_DEFS.forEach(def => {
       ytHandles[def.key] = (document.getElementById('yt-handle-'+def.key).value || '').replace('@','').trim();
     });
@@ -4460,10 +4630,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderCalendar();
   // Notion overview panel — fetch silently if databases are configured
   if (notionDbIds.tasks || notionDbIds.projects) fetchNotion(false);
-  // YouTube auto-sync hint on Channels tab
-  if (ytApiKey) {
+
+  // ── Handle YouTube OAuth callback (tokens arrive as URL params after redirect) ──
+  const _urlP = new URLSearchParams(window.location.search);
+  if (_urlP.has('yt_connected')) {
+    const rt = _urlP.get('yt_refresh_token') || '';
+    if (rt) {
+      ytRefreshToken = rt;
+      localStorage.setItem('tgf4_ytRefreshToken', rt);
+      window.history.replaceState({}, '', window.location.pathname);
+      renderChannelCards();
+      setSyncStatus('ok', 'YouTube connected — syncing…');
+      setTimeout(() => fetchYouTubeStats(), 600);  // auto-sync on connect
+    } else {
+      window.history.replaceState({}, '', window.location.pathname);
+      alert('YouTube connected but no refresh token received. Make sure you set prompt=consent and access_type=offline in the OAuth request.');
+    }
+  }
+  if (_urlP.has('yt_error')) {
+    const err = _urlP.get('yt_error');
+    window.history.replaceState({}, '', window.location.pathname);
+    alert('YouTube OAuth error: ' + err + '\n\nCheck your Client ID, Client Secret, and redirect URI in Google Cloud Console.');
+  }
+
+  // YouTube sync hint
+  if (ytApiKey || ytRefreshToken) {
     const btn = document.getElementById('yt-sync-btn');
-    if (btn) btn.title = 'API key configured — click to sync live stats';
+    if (btn) btn.title = ytRefreshToken ? 'OAuth connected — click to sync full analytics' : 'API key configured — click to sync';
   }
 });
 </script>
