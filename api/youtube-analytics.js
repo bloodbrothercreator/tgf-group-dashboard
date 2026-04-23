@@ -69,7 +69,7 @@ export default async function handler(req, res) {
     url.searchParams.set('ids',        `channel==${channel_id}`);
     url.searchParams.set('startDate',  startDate);
     url.searchParams.set('endDate',    today);
-    url.searchParams.set('metrics',    'views,estimatedMinutesWatched,subscribersGained,subscribersLost,estimatedRevenue,impressions,impressionsClickThroughRate,averageViewDuration');
+    url.searchParams.set('metrics',    'views,estimatedMinutesWatched,subscribersGained,subscribersLost,estimatedRevenue,averageViewDuration,likes,comments,shares');
     url.searchParams.set('dimensions', 'day');
 
     try {

@@ -3683,17 +3683,18 @@ async function fetchYouTubeAnalytics() {
       const col = name => headers.indexOf(name);
 
       let totalViews = 0, totalWatchMin = 0, totalSubsGained = 0, totalSubsLost = 0;
-      let totalRevenue = 0, totalImpressions = 0, ctrSum = 0, ctrN = 0, durSum = 0, durN = 0;
+      let totalRevenue = 0, totalLikes = 0, totalComments = 0, totalShares = 0;
+      let durSum = 0, durN = 0;
 
       rows.forEach(row => {
-        totalViews      += row[col('views')]                          || 0;
-        totalWatchMin   += row[col('estimatedMinutesWatched')]        || 0;
-        totalSubsGained += row[col('subscribersGained')]              || 0;
-        totalSubsLost   += row[col('subscribersLost')]                || 0;
-        totalRevenue    += row[col('estimatedRevenue')]               || 0;
-        totalImpressions+= row[col('impressions')]                    || 0;
-        const ctrVal = row[col('impressionsClickThroughRate')];
-        if (ctrVal != null) { ctrSum += ctrVal; ctrN++; }
+        totalViews      += row[col('views')]                   || 0;
+        totalWatchMin   += row[col('estimatedMinutesWatched')] || 0;
+        totalSubsGained += row[col('subscribersGained')]       || 0;
+        totalSubsLost   += row[col('subscribersLost')]         || 0;
+        totalRevenue    += row[col('estimatedRevenue')]        || 0;
+        totalLikes      += row[col('likes')]                   || 0;
+        totalComments   += row[col('comments')]                || 0;
+        totalShares     += row[col('shares')]                  || 0;
         const durVal = row[col('averageViewDuration')];
         if (durVal != null) { durSum += durVal; durN++; }
       });
@@ -3706,8 +3707,9 @@ async function fetchYouTubeAnalytics() {
         subsGained:   totalSubsGained,
         subsLost:     totalSubsLost,
         revenue:      parseFloat(totalRevenue.toFixed(2)),
-        impressions:  totalImpressions,
-        ctr:          ctrN > 0 ? parseFloat((ctrSum / ctrN * 100).toFixed(2)) : 0,
+        likes28:      totalLikes,
+        comments28:   totalComments,
+        shares28:     totalShares,
         avgViewDur:   durN > 0 ? Math.round(durSum / durN) : 0,
         lastUpdated:  new Date().toISOString(),
         oauthSynced:  true,
