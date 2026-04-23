@@ -314,6 +314,31 @@ input[type="month"].form-input { color-scheme: dark; }
 }
 .imp-toggle:hover { border-color: var(--muted); color: var(--text); }
 .imp-toggle.active { background: var(--gold-glow); border-color: var(--gold); color: var(--gold); }
+
+/* ── PROJECTED VS ACTUAL ── */
+.pva-chart-wrap { height: 200px; position: relative; }
+.pva-breakdown-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+.pva-breakdown-table th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: .5px; padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+.pva-breakdown-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+.pva-breakdown-table tr:last-child td { border-bottom: none; }
+.pva-bar-track { background: var(--surface2); border-radius: 4px; height: 6px; min-width: 80px; overflow: hidden; }
+.pva-bar-fill { height: 100%; border-radius: 4px; background: var(--gold); transition: width .3s; }
+.pva-bar-fill.over { background: var(--green); }
+.pva-bar-fill.under { background: var(--red); }
+
+/* ── CHANNEL ANALYTICS CARDS ── */
+.ch-last-updated { font-size: 10px; font-weight: 600; border-radius: 20px; padding: 3px 10px; display: inline-block; margin-top: 2px; }
+.ch-last-updated.fresh { background: rgba(34,197,94,.12); color: var(--green); border: 1px solid rgba(34,197,94,.25); }
+.ch-last-updated.stale { background: rgba(245,158,11,.12); color: var(--amber); border: 1px solid rgba(245,158,11,.25); }
+.ch-last-updated.never { background: rgba(107,114,128,.1); color: var(--muted); border: 1px solid var(--border); }
+.ch-analytics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 1100px) { .ch-analytics-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px) { .ch-analytics-grid { grid-template-columns: 1fr; } }
+.ch-analytics-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.ch-metrics-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.ch-metric { background: var(--surface2); border-radius: 8px; padding: 8px 12px; }
+.ch-metric .m-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.ch-metric .m-val { font-size: 14px; font-weight: 700; color: var(--text); margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -582,6 +607,21 @@ input[type="month"].form-input { color-scheme: dark; }
     </div>
   </div>
 
+  <!-- ── PROJECTED VS ACTUAL ── -->
+  <div class="grid-2-1" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-title">Projected vs Actual Revenue — All Time</div>
+      <div class="pva-chart-wrap"><canvas id="pvaChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Channel Breakdown — <span id="pva-breakdown-label">—</span></div>
+      <table class="pva-breakdown-table">
+        <thead><tr><th>Channel</th><th>Target</th><th>Actual</th><th>Progress</th></tr></thead>
+        <tbody id="pva-breakdown-body"><tr><td colspan="4" style="color:var(--muted);font-size:12px;padding:12px 10px">No data yet.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- ── MONTH NAVIGATOR ── -->
   <div class="card" style="padding:14px 20px;margin-bottom:16px">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
@@ -692,182 +732,14 @@ input[type="month"].form-input { color-scheme: dark; }
 
 <!-- ══════════════ CHANNELS ══════════════ -->
 <section class="section" id="channels">
-  <div class="page-header">
-    <h1>Channels</h1>
-    <p>TGF Group YouTube silos — stats &amp; health. Click ✏️ to update any figure.</p>
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>Channels</h1>
+      <p>TGF Group YouTube silos — stats &amp; analytics. Update any channel via the Analytics button.</p>
+    </div>
   </div>
-
-  <div class="grid-3">
-    <!-- TGFbro -->
-    <div class="channel-card">
-      <div class="channel-card-header">
-        <div><div class="channel-name">TGFbro</div><div class="channel-handle">@TGFbro</div></div>
-        <span class="pill pill-gold">Flagship</span>
-      </div>
-      <div class="channel-stat-row">
-        <div class="channel-stat">
-          <div class="label">Subscribers</div>
-          <div class="val editable-wrap"><span id="ch-tgfbro-subs">6.0M</span><button class="edit-btn" onclick="editStat('ch-tgfbro-subs','TGFbro Subs')">✏️</button></div>
-        </div>
-        <div class="channel-stat">
-          <div class="label">28-Day Views</div>
-          <div class="val editable-wrap"><span id="ch-tgfbro-views">3.39M</span><button class="edit-btn" onclick="editStat('ch-tgfbro-views','TGFbro 28-day Views')">✏️</button></div>
-        </div>
-      </div>
-      <div class="channel-stat-row" style="margin-top:10px">
-        <div class="channel-stat">
-          <div class="label">Monthly Revenue</div>
-          <div class="val" style="color:var(--gold)">£16,474</div>
-        </div>
-        <div class="channel-stat">
-          <div class="label">Upload Cadence</div>
-          <div class="val editable-wrap"><span id="ch-tgfbro-cadence">2x/wk</span><button class="edit-btn" onclick="editStat('ch-tgfbro-cadence','TGFbro Cadence')">✏️</button></div>
-        </div>
-      </div>
-      <div class="channel-stat-row" style="margin-top:10px">
-        <div class="channel-stat">
-          <div class="label">RPM</div>
-          <div class="val">£4.87</div>
-        </div>
-        <div class="channel-stat">
-          <div class="label">CTR</div>
-          <div class="val">5.34%</div>
-        </div>
-      </div>
-      <div class="progress-wrap" style="margin-top:12px"><div class="progress-bar" style="width:85%"></div></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Health: Strong — comeback momentum active</div>
-    </div>
-
-    <!-- Gaming -->
-    <div class="channel-card">
-      <div class="channel-card-header">
-        <div><div class="channel-name">TGF Gaming</div><div class="channel-handle">@TGFGaming</div></div>
-        <span class="pill pill-green">Active</span>
-      </div>
-      <div class="channel-stat-row">
-        <div class="channel-stat">
-          <div class="label">Subscribers</div>
-          <div class="val editable-wrap"><span id="ch-gaming-subs">TBC</span><button class="edit-btn" onclick="editStat('ch-gaming-subs','Gaming Subs')">✏️</button></div>
-        </div>
-        <div class="channel-stat">
-          <div class="label">Avg Views</div>
-          <div class="val editable-wrap"><span id="ch-gaming-views">TBC</span><button class="edit-btn" onclick="editStat('ch-gaming-views','Gaming Views')">✏️</button></div>
-        </div>
-      </div>
-      <div class="channel-stat-row" style="margin-top:10px">
-        <div class="channel-stat">
-          <div class="label">Monthly Revenue</div>
-          <div class="val editable-wrap">£<span id="ch-gaming-rev">0</span><button class="edit-btn" onclick="editStat('ch-gaming-rev','Gaming Revenue')">✏️</button></div>
-        </div>
-        <div class="channel-stat">
-          <div class="label">Upload Cadence</div>
-          <div class="val editable-wrap"><span id="ch-gaming-cadence">TBC</span><button class="edit-btn" onclick="editStat('ch-gaming-cadence','Gaming Cadence')">✏️</button></div>
-        </div>
-      </div>
-      <div class="progress-wrap" style="margin-top:12px"><div class="progress-bar" style="width:40%"></div></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Health: Building — Lindan leading</div>
-    </div>
-
-    <!-- Troof or Miff -->
-    <div class="channel-card">
-      <div class="channel-card-header">
-        <div><div class="channel-name">Troof or Miff</div><div class="channel-handle">Gameshow Format</div></div>
-        <span class="pill pill-green">Active</span>
-      </div>
-      <div class="channel-stat-row">
-        <div class="channel-stat">
-          <div class="label">Subscribers</div>
-          <div class="val editable-wrap"><span id="ch-troof-subs">TBC</span><button class="edit-btn" onclick="editStat('ch-troof-subs','Troof Subs')">✏️</button></div>
-        </div>
-        <div class="channel-stat">
-          <div class="label">Avg Views</div>
-          <div class="val editable-wrap"><span id="ch-troof-views">TBC</span><button class="edit-btn" onclick="editStat('ch-troof-views','Troof Views')">✏️</button></div>
-        </div>
-      </div>
-      <div class="channel-stat-row" style="margin-top:10px">
-        <div class="channel-stat">
-          <div class="label">Monthly Revenue</div>
-          <div class="val editable-wrap">£<span id="ch-troof-rev">0</span><button class="edit-btn" onclick="editStat('ch-troof-rev','Troof Revenue')">✏️</button></div>
-        </div>
-        <div class="channel-stat">
-          <div class="label">Episodes/Mo</div>
-          <div class="val editable-wrap"><span id="ch-troof-cadence">TBC</span><button class="edit-btn" onclick="editStat('ch-troof-cadence','Troof Episodes')">✏️</button></div>
-        </div>
-      </div>
-      <div class="progress-wrap" style="margin-top:12px"><div class="progress-bar" style="width:35%"></div></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Health: Early stage — Ellie &amp; Abbey leading</div>
-    </div>
-
-    <!-- Food -->
-    <div class="channel-card">
-      <div class="channel-card-header">
-        <div><div class="channel-name">TGF Food</div><div class="channel-handle">Travel &amp; Food Content</div></div>
-        <span class="pill pill-red">Blocked</span>
-      </div>
-      <div class="channel-stat-row">
-        <div class="channel-stat">
-          <div class="label">Status</div>
-          <div class="val" style="color:var(--red);font-size:13px">Awaiting Hire #4 (CM)</div>
-        </div>
-      </div>
-      <div class="alert-banner alert-red" style="margin-top:12px;padding:8px 12px;font-size:12px">
-        ⚠ Food Channel Manager hire is prerequisite for launch. Zero content until hired.
-      </div>
-      <div class="progress-wrap" style="margin-top:8px"><div class="progress-bar" style="width:5%"></div></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Health: Blocked — hire P2 priority</div>
-    </div>
-
-    <!-- Live -->
-    <div class="channel-card">
-      <div class="channel-card-header">
-        <div><div class="channel-name">TGF Live</div><div class="channel-handle">Events &amp; Streams</div></div>
-        <span class="pill pill-amber">Planned</span>
-      </div>
-      <div class="channel-stat-row">
-        <div class="channel-stat">
-          <div class="label">Launch Target</div>
-          <div class="val editable-wrap"><span id="ch-live-launch">Mo. 6</span><button class="edit-btn" onclick="editStat('ch-live-launch','Live Launch')">✏️</button></div>
-        </div>
-        <div class="channel-stat">
-          <div class="label">Events/Mo</div>
-          <div class="val editable-wrap"><span id="ch-live-events">TBC</span><button class="edit-btn" onclick="editStat('ch-live-events','Live Events/Mo')">✏️</button></div>
-        </div>
-      </div>
-      <div class="channel-stat-row" style="margin-top:10px">
-        <div class="channel-stat">
-          <div class="label">Monthly Revenue</div>
-          <div class="val editable-wrap">£<span id="ch-live-rev">0</span><button class="edit-btn" onclick="editStat('ch-live-rev','Live Revenue')">✏️</button></div>
-        </div>
-      </div>
-      <div class="progress-wrap" style="margin-top:12px"><div class="progress-bar blue" style="width:20%"></div></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Health: Planning phase — launch at Month 6</div>
-    </div>
-
-    <!-- Max -->
-    <div class="channel-card">
-      <div class="channel-card-header">
-        <div><div class="channel-name">TGF Max</div><div class="channel-handle">Premium / Subscription</div></div>
-        <span class="pill pill-amber">Planned</span>
-      </div>
-      <div class="channel-stat-row">
-        <div class="channel-stat">
-          <div class="label">Launch Target</div>
-          <div class="val editable-wrap"><span id="ch-max-launch">Mo. 6</span><button class="edit-btn" onclick="editStat('ch-max-launch','Max Launch')">✏️</button></div>
-        </div>
-        <div class="channel-stat">
-          <div class="label">Target Subs</div>
-          <div class="val editable-wrap"><span id="ch-max-subs">TBC</span><button class="edit-btn" onclick="editStat('ch-max-subs','Max Subs')">✏️</button></div>
-        </div>
-      </div>
-      <div class="channel-stat-row" style="margin-top:10px">
-        <div class="channel-stat">
-          <div class="label">Monthly Revenue</div>
-          <div class="val editable-wrap">£<span id="ch-max-rev">0</span><button class="edit-btn" onclick="editStat('ch-max-rev','Max Revenue')">✏️</button></div>
-        </div>
-      </div>
-      <div class="progress-wrap" style="margin-top:12px"><div class="progress-bar" style="width:10%"></div></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Health: Planning — requires CTO hire first</div>
-    </div>
+  <div class="ch-analytics-grid" id="channels-grid">
+    <!-- Populated by JS -->
   </div>
 </section>
 
@@ -1405,6 +1277,8 @@ function renderMonthView() {
   renderEarningsLog();
   renderSpendingsLog();
   updateChartFromLog();
+  // Update projected vs actual breakdown for the current month
+  if (typeof updatePvaChart === 'function') updatePvaChart();
 }
 
 // ══════════════════════════════════════════
@@ -2206,9 +2080,341 @@ function openAddRiskModal() {
 }
 
 // ══════════════════════════════════════════
+//  PROJECTED VS ACTUAL CHART
+// ══════════════════════════════════════════
+let pvaChart = null;
+
+function initPvaChart() {
+  const ctx = document.getElementById('pvaChart');
+  if (!ctx) return;
+  pvaChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: [], datasets: [
+      { label: 'Target', data: [], backgroundColor: 'rgba(201,168,76,0.25)', borderColor: '#c9a84c', borderWidth: 2, borderRadius: 4 },
+      { label: 'Actual', data: [], backgroundColor: 'rgba(34,197,94,0.3)', borderColor: '#22c55e', borderWidth: 2, borderRadius: 4 }
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#6b7280', font: { size: 11 } } }, tooltip: { callbacks: {
+        label: ctx => `${ctx.dataset.label}: £${Number(ctx.parsed.y).toLocaleString()}`
+      }}},
+      scales: {
+        x: { ticks: { color: '#6b7280', font: { size: 11 } }, grid: { color: '#252a38' } },
+        y: { ticks: { color: '#6b7280', font: { size: 11 }, callback: v => '£' + (v >= 1000 ? Math.round(v/1000)+'K' : v) }, grid: { color: '#252a38' }, beginAtZero: true }
+      }
+    }
+  });
+  updatePvaChart();
+}
+
+function updatePvaChart() {
+  if (!pvaChart) return;
+
+  // Collect all months that have earnings or targets
+  const monthSet = new Set();
+  earningsLog.forEach(e => monthSet.add(migrateDate(e.date)));
+  Object.keys(monthlyTargets).forEach(m => monthSet.add(m));
+  if (monthSet.size === 0) { pvaChart.data.labels = []; pvaChart.data.datasets[0].data = []; pvaChart.data.datasets[1].data = []; pvaChart.update(); return; }
+
+  const months = Array.from(monthSet).sort();
+  const targets = months.map(m => {
+    const t = getMonthTargets(m);
+    return Object.values(t).reduce((a,b) => a + Number(b), 0);
+  });
+  const actuals = months.map(m => {
+    return getMonthLog(earningsLog, m).reduce((s,e) => s + Number(e.amount), 0);
+  });
+
+  pvaChart.data.labels = months.map(m => formatMonthLabel(m));
+  pvaChart.data.datasets[0].data = targets;
+  pvaChart.data.datasets[1].data = actuals;
+  pvaChart.update();
+
+  // Update breakdown for current month
+  updatePvaBreakdown(currentMonth);
+}
+
+function updatePvaBreakdown(month) {
+  const labelEl = document.getElementById('pva-breakdown-label');
+  const tbody = document.getElementById('pva-breakdown-body');
+  if (!labelEl || !tbody) return;
+  labelEl.textContent = formatMonthLabel(month);
+
+  const targets = getMonthTargets(month);
+  const rows = CHANNELS.map(ch => {
+    const target = Number(targets[ch] || 0);
+    const actual = getMonthLog(earningsLog, month).filter(e => e.channel === ch).reduce((s,e) => s + Number(e.amount), 0);
+    const pct = target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : (actual > 0 ? 100 : 0);
+    const fillClass = actual >= target && target > 0 ? 'over' : actual > 0 ? '' : 'under';
+    return { ch, target, actual, pct, fillClass };
+  }).filter(r => r.target > 0 || r.actual > 0);
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);font-size:12px;padding:12px 10px">No data for this month.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td style="font-weight:600">${r.ch}</td>
+      <td style="color:var(--muted)">£${r.target.toLocaleString()}</td>
+      <td style="color:${r.actual >= r.target && r.target > 0 ? 'var(--green)' : r.actual > 0 ? 'var(--gold)' : 'var(--muted)'}">£${r.actual.toLocaleString()}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="pva-bar-track" style="flex:1"><div class="pva-bar-fill ${r.fillClass}" style="width:${r.pct}%"></div></div>
+          <span style="font-size:11px;color:var(--muted);min-width:32px;text-align:right">${r.pct}%</span>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+//  CHANNEL ANALYTICS
+// ══════════════════════════════════════════
+const CHANNEL_DEFS = [
+  { key:'tgfbro',  name:'TGFbro',       handle:'@TGFbro',           pillClass:'pill-gold',  pillLabel:'Flagship', health:'Strong — comeback momentum active',   healthPct:85 },
+  { key:'gaming',  name:'TGF Gaming',   handle:'@TGFGaming',        pillClass:'pill-green', pillLabel:'Active',   health:'Building — Lindan leading',           healthPct:40 },
+  { key:'troof',   name:'Troof or Miff',handle:'Gameshow Format',   pillClass:'pill-green', pillLabel:'Active',   health:'Early stage — Ellie & Abbey leading', healthPct:35 },
+  { key:'food',    name:'TGF Food',     handle:'Travel & Food',     pillClass:'pill-red',   pillLabel:'Blocked',  health:'Blocked — hire P2 priority',          healthPct:5  },
+  { key:'live',    name:'TGF Live',     handle:'Events & Streams',  pillClass:'pill-amber', pillLabel:'Planned',  health:'Planning phase — launch at Month 6',  healthPct:20 },
+  { key:'max',     name:'TGF Max',      handle:'Premium / Sub',     pillClass:'pill-amber', pillLabel:'Planned',  health:'Planning — requires CTO hire first',  healthPct:10 },
+];
+
+const DEFAULT_ANALYTICS = {
+  tgfbro: { subs:'6.0M', views28:3385371, watchTimeHrs:506965, subsGained:7075, revenue:16473.62, impressions:39762559, ctr:5.34, avgViewDur:539, cadence:'2×/wk', lastUpdated: new Date().toISOString() },
+  gaming: { subs:'TBC', views28:0, watchTimeHrs:0, subsGained:0, revenue:0, impressions:0, ctr:0, avgViewDur:0, cadence:'TBC', lastUpdated:null },
+  troof:  { subs:'TBC', views28:0, watchTimeHrs:0, subsGained:0, revenue:0, impressions:0, ctr:0, avgViewDur:0, cadence:'TBC', lastUpdated:null },
+  food:   { subs:'—',   views28:0, watchTimeHrs:0, subsGained:0, revenue:0, impressions:0, ctr:0, avgViewDur:0, cadence:'Blocked', lastUpdated:null },
+  live:   { subs:'—',   views28:0, watchTimeHrs:0, subsGained:0, revenue:0, impressions:0, ctr:0, avgViewDur:0, cadence:'TBC', lastUpdated:null },
+  max:    { subs:'—',   views28:0, watchTimeHrs:0, subsGained:0, revenue:0, impressions:0, ctr:0, avgViewDur:0, cadence:'TBC', lastUpdated:null },
+};
+
+let channelAnalytics = {};
+function loadChannelAnalytics() {
+  const saved = localStorage.getItem('tgf4_channelAnalytics');
+  channelAnalytics = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_ANALYTICS));
+}
+function saveChannelAnalytics() {
+  localStorage.setItem('tgf4_channelAnalytics', JSON.stringify(channelAnalytics));
+}
+
+function fmtNum(n) {
+  if (!n || n === 0) return '—';
+  if (n >= 1e6) return (n/1e6).toFixed(2).replace(/\.?0+$/,'') + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1).replace(/\.?0+$/,'') + 'K';
+  return n.toLocaleString();
+}
+function fmtDur(secs) {
+  if (!secs || secs === 0) return '—';
+  const m = Math.floor(secs / 60), s = secs % 60;
+  return `${m}m ${String(s).padStart(2,'0')}s`;
+}
+function lastUpdatedBadge(iso) {
+  if (!iso) return `<span class="ch-last-updated never">Never updated</span>`;
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days > 30) return `<span class="ch-last-updated stale">Updated ${days}d ago</span>`;
+  return `<span class="ch-last-updated fresh">Updated ${days === 0 ? 'today' : days + 'd ago'}</span>`;
+}
+
+function renderChannelCards() {
+  const grid = document.getElementById('channels-grid');
+  if (!grid) return;
+  grid.innerHTML = CHANNEL_DEFS.map(def => {
+    const a = channelAnalytics[def.key] || DEFAULT_ANALYTICS[def.key];
+    const rpm = a.views28 > 0 && a.revenue > 0 ? (a.revenue / (a.views28 / 1000)).toFixed(2) : '—';
+    return `
+    <div class="channel-card">
+      <div class="channel-card-header">
+        <div>
+          <div class="channel-name">${def.name}</div>
+          <div class="channel-handle">${def.handle}</div>
+        </div>
+        <span class="pill ${def.pillClass}">${def.pillLabel}</span>
+      </div>
+      <div class="ch-metrics-row">
+        <div class="ch-metric"><div class="m-label">Subscribers</div><div class="m-val">${a.subs || '—'}</div></div>
+        <div class="ch-metric"><div class="m-label">28-Day Views</div><div class="m-val">${fmtNum(a.views28)}</div></div>
+        <div class="ch-metric"><div class="m-label">Watch Time</div><div class="m-val">${a.watchTimeHrs >= 1000 ? fmtNum(Math.round(a.watchTimeHrs))+'h' : a.watchTimeHrs > 0 ? Math.round(a.watchTimeHrs)+'h' : '—'}</div></div>
+        <div class="ch-metric"><div class="m-label">Avg View Dur</div><div class="m-val">${fmtDur(a.avgViewDur)}</div></div>
+        <div class="ch-metric"><div class="m-label">Impressions</div><div class="m-val">${fmtNum(a.impressions)}</div></div>
+        <div class="ch-metric"><div class="m-label">CTR</div><div class="m-val">${a.ctr > 0 ? a.ctr.toFixed(2)+'%' : '—'}</div></div>
+      </div>
+      <div class="ch-analytics-footer">
+        <div>
+          <div style="font-size:12px;color:var(--gold);font-weight:700">£${a.revenue > 0 ? a.revenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '0'} <span style="color:var(--muted);font-weight:400;font-size:11px">28-day revenue</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+            ${lastUpdatedBadge(a.lastUpdated)}
+            <span style="font-size:11px;color:var(--muted)">${a.cadence}</span>
+          </div>
+        </div>
+        <button class="btn-primary" style="font-size:11px;padding:6px 14px" onclick="openAnalyticsModal('${def.key}')">📊 Analytics</button>
+      </div>
+      <div class="progress-wrap" style="margin-top:12px"><div class="progress-bar" style="width:${def.healthPct}%"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${def.health}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Analytics Modal ──
+function openAnalyticsModal(chKey) {
+  const def = CHANNEL_DEFS.find(d => d.key === chKey);
+  const a = channelAnalytics[chKey] || JSON.parse(JSON.stringify(DEFAULT_ANALYTICS[chKey]));
+  const body = `
+    <div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-size:12px;color:var(--muted)">Upload a YouTube Studio CSV to auto-fill, or enter manually below.</span>
+        <label class="btn-secondary" style="cursor:pointer;font-size:12px;padding:6px 14px;display:inline-block">
+          📁 Upload CSV
+          <input type="file" id="yt-csv-input" accept=".csv" style="display:none" onchange="handleYTCsvUpload('${chKey}')">
+        </label>
+      </div>
+      <div id="csv-status" style="font-size:12px;color:var(--green);min-height:18px;margin-bottom:6px"></div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Total Subscribers</label>
+        <input class="form-input" id="af-subs" value="${a.subs||''}" placeholder="e.g. 6.2M">
+      </div>
+      <div>
+        <label class="form-label">Upload Cadence</label>
+        <input class="form-input" id="af-cadence" value="${a.cadence||''}" placeholder="e.g. 2×/wk">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">28-Day Views</label>
+        <input class="form-input" id="af-views" type="number" min="0" value="${a.views28||0}">
+      </div>
+      <div>
+        <label class="form-label">Subscribers Gained (28d)</label>
+        <input class="form-input" id="af-subsgained" type="number" min="0" value="${a.subsGained||0}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Watch Time — Hours (28d)</label>
+        <input class="form-input" id="af-watchtime" type="number" min="0" step="0.01" value="${a.watchTimeHrs||0}">
+      </div>
+      <div>
+        <label class="form-label">Avg View Duration (seconds)</label>
+        <input class="form-input" id="af-avgdur" type="number" min="0" value="${a.avgViewDur||0}" placeholder="Auto-calculated from CSV">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Impressions (28d)</label>
+        <input class="form-input" id="af-impressions" type="number" min="0" value="${a.impressions||0}">
+      </div>
+      <div>
+        <label class="form-label">CTR %</label>
+        <input class="form-input" id="af-ctr" type="number" min="0" step="0.01" value="${a.ctr||0}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">28-Day Revenue (£)</label>
+        <input class="form-input" id="af-revenue" type="number" min="0" step="0.01" value="${a.revenue||0}">
+      </div>
+    </div>`;
+
+  openModal(`📊 ${def.name} — Analytics`, body, () => saveAnalyticsFromModal(chKey), 'Save');
+}
+
+function handleYTCsvUpload(chKey) {
+  const file = document.getElementById('yt-csv-input').files[0];
+  const statusEl = document.getElementById('csv-status');
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = parseYouTubeStudioCSV(e.target.result);
+      // Fill form fields
+      if (parsed.views28)      document.getElementById('af-views').value      = parsed.views28;
+      if (parsed.watchTimeHrs) document.getElementById('af-watchtime').value  = parsed.watchTimeHrs.toFixed(2);
+      if (parsed.subsGained)   document.getElementById('af-subsgained').value = parsed.subsGained;
+      if (parsed.revenue)      document.getElementById('af-revenue').value    = parsed.revenue.toFixed(2);
+      if (parsed.impressions)  document.getElementById('af-impressions').value= parsed.impressions;
+      if (parsed.ctr)          document.getElementById('af-ctr').value        = parsed.ctr.toFixed(2);
+      if (parsed.avgViewDur)   document.getElementById('af-avgdur').value     = Math.round(parsed.avgViewDur);
+      statusEl.textContent = `✓ CSV parsed — ${fmtNum(parsed.views28)} views, £${parsed.revenue.toFixed(2)} revenue, ${Math.round(parsed.avgViewDur)}s avg view duration`;
+      statusEl.style.color = 'var(--green)';
+    } catch(err) {
+      statusEl.textContent = '✗ Could not parse CSV. Make sure it is a YouTube Studio export.';
+      statusEl.style.color = 'var(--red)';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '', inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQuote = !inQuote; }
+    else if (ch === ',' && !inQuote) { result.push(cur.trim()); cur = ''; }
+    else cur += ch;
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function parseYouTubeStudioCSV(csvText) {
+  const lines = csvText.split('\n').filter(l => l.trim());
+  if (lines.length < 2) throw new Error('Too few lines');
+  const headers = parseCSVLine(lines[0]);
+  // Find the Total row — first data row where col 0 = "Total" or empty channel col
+  let totalRowIdx = 1;
+  for (let i = 1; i < lines.length; i++) {
+    const row = parseCSVLine(lines[i]);
+    if (row[0] && row[0].toLowerCase().includes('total')) { totalRowIdx = i; break; }
+  }
+  const totalRow = parseCSVLine(lines[totalRowIdx]);
+  const col = {};
+  headers.forEach((h, i) => col[h.trim().toLowerCase()] = i);
+
+  const get = (key, fallback = 0) => {
+    // Try partial match
+    const k = Object.keys(col).find(k => k.includes(key.toLowerCase()));
+    if (k === undefined) return fallback;
+    return totalRow[col[k]];
+  };
+
+  const views28     = parseInt(get('views'))    || 0;
+  const watchTimeHrs= parseFloat(get('watch time')) || 0;
+  const subsGained  = parseInt(get('subscribers')) || 0;
+  const revenue     = parseFloat(get('revenue'))   || 0;
+  const impressions = parseInt(get('impressions'))  || 0;
+  const ctr         = parseFloat(get('click-through rate') || get('ctr')) || 0;
+  const avgViewDur  = views28 > 0 && watchTimeHrs > 0 ? (watchTimeHrs * 3600 / views28) : 0;
+
+  return { views28, watchTimeHrs, subsGained, revenue, impressions, ctr, avgViewDur };
+}
+
+function saveAnalyticsFromModal(chKey) {
+  if (!channelAnalytics[chKey]) channelAnalytics[chKey] = JSON.parse(JSON.stringify(DEFAULT_ANALYTICS[chKey]));
+  const a = channelAnalytics[chKey];
+  a.subs       = document.getElementById('af-subs').value.trim();
+  a.cadence    = document.getElementById('af-cadence').value.trim();
+  a.views28    = parseFloat(document.getElementById('af-views').value) || 0;
+  a.subsGained = parseFloat(document.getElementById('af-subsgained').value) || 0;
+  a.watchTimeHrs = parseFloat(document.getElementById('af-watchtime').value) || 0;
+  a.avgViewDur = parseFloat(document.getElementById('af-avgdur').value) || 0;
+  a.impressions= parseFloat(document.getElementById('af-impressions').value) || 0;
+  a.ctr        = parseFloat(document.getElementById('af-ctr').value) || 0;
+  a.revenue    = parseFloat(document.getElementById('af-revenue').value) || 0;
+  a.lastUpdated = new Date().toISOString();
+  saveChannelAnalytics();
+  renderChannelCards();
+  closeModal();
+}
+
+// ══════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
+  loadChannelAnalytics();
   restoreEdits();
   initChart();
   renderAllTimeKPIs();
@@ -2219,6 +2425,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderMilestones('all');
   renderOrgSection('central');
   renderRisks();
+  renderChannelCards();
+  initPvaChart();
 });
 </script>
 </body>
