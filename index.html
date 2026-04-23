@@ -1263,7 +1263,7 @@ function openModal(title, bodyHtml, saveFn, saveLabel) {
   setTimeout(() => { const f = document.querySelector('#modal-body input,#modal-body select'); if(f) f.focus(); }, 50);
 }
 function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
-function modalSave() { if (_modalSaveFn) _modalSaveFn(); }
+function modalSave() { if (_modalSaveFn) _modalSaveFn(); closeModal(); }
 
 // ══════════════════════════════════════════
 //  ORG CHART — DATA & RENDERING
