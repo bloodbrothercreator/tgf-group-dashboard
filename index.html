@@ -4832,7 +4832,7 @@ function updateCalNav() {
     const ws=getWeekStart(calCursor), we=new Date(ws); we.setDate(we.getDate()+6);
     el.textContent = CAL_MONTHS[ws.getMonth()].slice(0,3)+' '+ws.getDate()+' – '+CAL_MONTHS[we.getMonth()].slice(0,3)+' '+we.getDate()+', '+we.getFullYear();
   } else {
-    el.textContent = CAL_DAYS_L[calCursor.getDay()]+', '+CAL_MONTHS[calCursor.getMonth()]+' '+calCursor.getDate()+' '+calCursor.getFullYear();
+    el.textContent = CAL_MONTHS[calCursor.getMonth()]+' '+calCursor.getDate()+', '+calCursor.getFullYear();
   }
 }
 
@@ -4985,32 +4985,124 @@ function renderDailyCalendar() {
   const filtered=getFilteredEvents();
   const ds=calDateStr(calCursor);
   const events=getEventsForDay(ds,filtered);
-  let html='<div style="max-width:700px">';
-  if (!events.length) {
-    html+=`<div style="text-align:center;padding:60px 0;color:var(--muted);font-size:14px">No events — <span style="color:var(--gold);cursor:pointer" onclick="openAddCalEventModal('${ds}')">+ Add one</span></div>`;
-  } else {
-    events.forEach(ev=>{
+  const today=calDateStr(new Date());
+  const isToday=ds===today;
+  const START_H=7, END_H=23, HOUR_PX=60;
+  const allDayEvs=events.filter(e=>!e.startTime);
+  const timedEvs=events.filter(e=>e.startTime);
+
+  // Date header
+  const dayName=CAL_DAYS_L[calCursor.getDay()];
+  const monthName=CAL_MONTHS[calCursor.getMonth()];
+  const dateNum=calCursor.getDate();
+  const yr=calCursor.getFullYear();
+
+  let html=`<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)">`;
+
+  // Header
+  html+=`<div style="padding:18px 24px 14px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:flex-end;justify-content:space-between">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px">${dayName}</div>
+      <div style="font-size:36px;font-weight:800;line-height:1;letter-spacing:-1px">
+        <span style="color:${isToday?'var(--gold)':'var(--text)'}">${dateNum}</span>
+        <span style="color:${isToday?'var(--gold)':'var(--text)'}"> ${monthName}</span>
+        <span style="color:var(--muted);font-weight:400;font-size:28px"> ${yr}</span>
+      </div>
+    </div>
+    <button class="btn-primary" style="font-size:12px" onclick="openAddCalEventModal('${ds}')">+ Add Event</button>
+  </div>`;
+
+  // All-day strip
+  if(allDayEvs.length){
+    const pills=allDayEvs.map(ev=>{
       const color=getCalTypeColor(ev.type);
-      const typLabel=(calEventTypes.find(t=>t.id===ev.type)||{label:ev.type}).label;
-      const ppl=ev.people&&ev.people.length?ev.people.join(', '):'—';
-      const channel=ev.channel?`<span style="background:rgba(114,194,232,.15);color:var(--gold);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:8px">${ev.channel}</span>`:'';
-      html+=`<div style="border:1px solid var(--border);border-left:4px solid ${color};border-radius:10px;padding:16px 20px;background:var(--surface);margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <div style="font-size:16px;font-weight:700">${ev.title||typLabel}${channel}</div>
-            <div style="font-size:11px;font-weight:600;color:${color};margin-top:3px;text-transform:uppercase;letter-spacing:.5px">${typLabel}${ev.recurringGroupId?'  ↻ Recurring':''}${ev.startTime?`  · ${ev.startTime}${ev.endTime?' – '+ev.endTime:''}`:ev.endDate&&ev.endDate>ev.date?`  · ${ev.date} → ${ev.endDate}`:''}</div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn-secondary" style="font-size:11px;padding:5px 10px" onclick="editCalEvent('${ev.id}')">Edit</button>
-            <button class="btn-secondary" style="font-size:11px;padding:5px 10px;color:var(--red)" onclick="deleteCalEvent('${ev.id}')">Delete</button>
-          </div>
-        </div>
-        ${ev.description?`<div style="font-size:13px;color:var(--muted);margin-top:10px">${ev.description}</div>`:''}
-        <div style="font-size:12px;color:var(--muted);margin-top:10px">👥 ${ppl}</div>
+      const tc=isLightColor(color)?'#111':'#fff';
+      const ppl=ev.people&&ev.people.length?' · '+ev.people.slice(0,3).map(p=>p.split(' ')[0]).join(', '):'';
+      const multiDay=ev.endDate&&ev.endDate>ev.date?` → ${ev.endDate}`:'';
+      return `<div onclick="editCalEvent('${ev.id}')" style="display:flex;align-items:center;background:${color};color:${tc};border-radius:6px;padding:7px 12px;cursor:pointer;font-size:13px;font-weight:600;gap:8px;flex:1;min-width:0">
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ev.title||ev.type}${ppl}${multiDay}</span>
+        <button onclick="event.stopPropagation();deleteCalEvent('${ev.id}')" style="background:rgba(0,0,0,.2);border:none;color:${tc};border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;flex-shrink:0">✕</button>
       </div>`;
-    });
+    }).join('');
+    html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 16px 10px 0;border-bottom:1px solid var(--border);background:var(--surface)">
+      <div style="width:60px;font-size:9px;color:var(--muted);text-align:right;padding-right:10px;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0">all‑day</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:5px">${pills}</div>
+    </div>`;
   }
-  html+=`<div style="margin-top:8px"><button class="btn-primary" onclick="openAddCalEventModal('${ds}')">+ Add Event for this Day</button></div></div>`;
+
+  // Time grid
+  html+=`<div style="display:flex;overflow-y:auto;max-height:640px;position:relative">`;
+
+  // Time labels
+  html+=`<div style="flex-shrink:0;width:60px;background:var(--surface)">`;
+  for(let h=START_H;h<=END_H;h++){
+    html+=`<div style="height:${HOUR_PX}px;padding-right:10px;font-size:11px;color:var(--muted);text-align:right;padding-top:4px;box-sizing:border-box;border-right:1px solid var(--border)">${h.toString().padStart(2,'0')}:00</div>`;
+  }
+  html+=`</div>`;
+
+  // Event column
+  html+=`<div style="flex:1;position:relative;background:var(--surface)">`;
+
+  // Hour lines
+  for(let h=START_H;h<=END_H;h++){
+    const top=(h-START_H)*HOUR_PX;
+    html+=`<div style="position:absolute;top:${top}px;left:0;right:0;height:${HOUR_PX}px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer" onclick="openAddCalEventModal('${ds}')"></div>`;
+    // Half-hour dashed line
+    html+=`<div style="position:absolute;top:${top+HOUR_PX/2}px;left:0;right:0;border-top:1px dashed rgba(255,255,255,.03);pointer-events:none"></div>`;
+  }
+
+  // Current time line
+  if(isToday){
+    const now=new Date();
+    const nowH=now.getHours(), nowM=now.getMinutes();
+    if(nowH>=START_H && nowH<=END_H){
+      const topPx=((nowH-START_H)+(nowM/60))*HOUR_PX;
+      const timeStr=nowH.toString().padStart(2,'0')+':'+nowM.toString().padStart(2,'0');
+      html+=`<div style="position:absolute;top:${topPx}px;left:0;right:0;height:2px;background:#ef4444;z-index:10;pointer-events:none">
+        <span style="position:absolute;left:-56px;top:-9px;background:#ef4444;color:#fff;border-radius:5px;padding:2px 6px;font-size:10px;font-weight:700;white-space:nowrap">${timeStr}</span>
+        <span style="position:absolute;left:-6px;top:-4px;width:10px;height:10px;background:#ef4444;border-radius:50%"></span>
+      </div>`;
+    }
+  }
+
+  // Timed events as blocks
+  timedEvs.forEach(ev=>{
+    const [sh,sm]=(ev.startTime||'08:00').split(':').map(Number);
+    const [eh,em]=(ev.endTime||ev.startTime||'09:00').split(':').map(Number);
+    const startMin=(sh-START_H)*60+(sm||0);
+    const endMin=ev.endTime?(eh-START_H)*60+(em||0):startMin+60;
+    const top=Math.max(0,startMin/60*HOUR_PX);
+    const height=Math.max(28,(endMin-startMin)/60*HOUR_PX);
+    const color=getCalTypeColor(ev.type);
+    const tc=isLightColor(color)?'#111':'#fff';
+    const ppl=ev.people&&ev.people.length?ev.people.join(', '):'';
+    const typLabel=(calEventTypes.find(t=>t.id===ev.type)||{label:ev.type}).label;
+    const timeRange=ev.startTime+(ev.endTime?' – '+ev.endTime:'');
+    const channel=ev.channel?`<span style="font-size:10px;opacity:.8;margin-left:6px">${ev.channel}</span>`:'';
+    const desc=ev.description?`<div style="font-size:11px;margin-top:4px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.description}</div>`:'';
+    html+=`<div onclick="editCalEvent('${ev.id}')" style="position:absolute;top:${top+2}px;left:8px;right:8px;min-height:${height-4}px;background:${color};color:${tc};border-radius:8px;padding:8px 12px;cursor:pointer;overflow:hidden;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.35)">
+      <div style="font-size:10px;font-weight:600;opacity:.85;margin-bottom:2px">${timeRange} · ${typLabel}${channel}</div>
+      <div style="font-size:14px;font-weight:700">${ev.title||typLabel}</div>
+      ${ppl?`<div style="font-size:11px;margin-top:3px;opacity:.85">👥 ${ppl}</div>`:''}
+      ${desc}
+      <div style="position:absolute;top:8px;right:8px;display:flex;gap:4px">
+        <button onclick="event.stopPropagation();deleteCalEvent('${ev.id}')" style="background:rgba(0,0,0,.25);border:none;color:${tc};border-radius:4px;padding:2px 7px;font-size:10px;cursor:pointer">✕</button>
+      </div>
+    </div>`;
+  });
+
+  // Empty state for timed area
+  if(!timedEvs.length&&!allDayEvs.length){
+    html+=`<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--muted)">
+      <div style="font-size:32px;margin-bottom:10px;opacity:.3">📅</div>
+      <div style="font-size:14px;font-weight:600">No events today</div>
+      <div style="font-size:12px;margin-top:6px">Click any time slot to add one</div>
+    </div>`;
+  }
+
+  // Spacer to fill out the column
+  html+=`<div style="height:${(END_H-START_H+1)*HOUR_PX}px"></div>`;
+  html+=`</div></div></div>`;
   body.innerHTML=html;
 }
 
