@@ -2566,12 +2566,18 @@ function generateBriefing() {
   }
 
   // 3. Overdue milestones
-  const overdue = (milestonesData || []).filter(m => {
+  const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function toYM(dateStr) {
+    if (!dateStr) return null;
+    const m = dateStr.match(/^([A-Za-z]+)\s(\d{4})$/);
+    if (!m) return null;
+    const idx = MONTH_ABBR.findIndex(x => x.toLowerCase() === m[1].toLowerCase().slice(0,3));
+    if (idx < 0) return null;
+    return `${m[2]}-${String(idx+1).padStart(2,'0')}`;
+  }
+  const overdue = (milestones || []).filter(m => {
     if (m.status === 'done') return false;
-    const mDate = m.date ? m.date.replace(/^([A-Za-z]+)\s(\d{4})$/, (_, mo, yr) => {
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      return `${yr}-${String(months.indexOf(mo)+1).padStart(2,'0')}`;
-    }) : null;
+    const mDate = toYM(m.date);
     return mDate && mDate < todayYM;
   });
   if (overdue.length > 0) {
