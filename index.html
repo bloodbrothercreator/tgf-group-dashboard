@@ -3501,10 +3501,7 @@ function tagInputKey(e) {
 // ── Event form HTML ────────────────────────
 function calEventFormHtml(ev, defaultDate) {
   const typeOpts=calEventTypes.map(t=>`<option value="${t.id}" ${ev&&ev.type===t.id?'selected':''}>${t.label}</option>`).join('');
-  const channelOpts=(channelAnalytics||[]).map(c=>{
-    const n=c.name||c.channel||'';
-    return `<option value="${n}" ${ev&&ev.channel===n?'selected':''}>${n}</option>`;
-  }).join('');
+  const channelOpts=CHANNEL_DEFS.map(c=>`<option value="${c.name}" ${ev&&ev.channel===c.name?'selected':''}>${c.name}</option>`).join('');
   const isShoot=ev?ev.type==='shoot':false;
   const hasRecurring=ev&&ev.recurringGroupId;
   return `<div style="display:flex;flex-direction:column;gap:14px">
