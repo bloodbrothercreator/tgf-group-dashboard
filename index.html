@@ -3263,77 +3263,118 @@ let histKey    = null;
 let histPeriod = '28';
 let _histCharts = {};
 
+// ── CSV log: each uploaded CSV is stored separately; master rebuilt by merging all ──
+function getCsvLog(key) {
+  try { return JSON.parse(localStorage.getItem(`tgf4_hist_${key}_csvLog`) || '[]'); } catch(e) { return []; }
+}
+
+function rebuildHistMaster(key) {
+  const log = getCsvLog(key);
+  const byDate = {};
+  // Merge all stored CSVs in upload order (later overwrites earlier for same dates)
+  log.forEach(entry => {
+    try {
+      const rows = JSON.parse(localStorage.getItem(`tgf4_hist_${key}_csv_${entry.id}`) || '[]');
+      rows.forEach(r => { byDate[r.date] = r; });
+    } catch(e) {}
+  });
+  // Also fold in any API-fetched data (stored separately, CSV data wins on overlap)
+  try {
+    const apiRows = JSON.parse(localStorage.getItem(`tgf4_hist_${key}_api`) || '[]');
+    apiRows.forEach(r => { if (!byDate[r.date]) byDate[r.date] = r; });
+  } catch(e) {}
+  const master = Object.values(byDate).sort((a,b) => new Date(a.date) - new Date(b.date));
+  if (master.length > 0) {
+    localStorage.setItem(`tgf4_hist_${key}_master`, JSON.stringify(master));
+    localStorage.setItem(`tgf4_hist_${key}_lastUpdate`, new Date().toISOString());
+  } else {
+    localStorage.removeItem(`tgf4_hist_${key}_master`);
+  }
+  return master;
+}
+
+function saveCsvUpload(key, filename, rows) {
+  const id = 'csv_' + Date.now();
+  localStorage.setItem(`tgf4_hist_${key}_csv_${id}`, JSON.stringify(rows));
+  const log = getCsvLog(key);
+  log.push({
+    id, filename,
+    uploadedAt: new Date().toISOString(),
+    from: rows[0]?.date || '',
+    to:   rows[rows.length - 1]?.date || '',
+    rowCount: rows.length,
+  });
+  localStorage.setItem(`tgf4_hist_${key}_csvLog`, JSON.stringify(log));
+  return rebuildHistMaster(key);
+}
+
+function deleteCsvUpload(key, csvId) {
+  const log = getCsvLog(key).filter(c => c.id !== csvId);
+  localStorage.setItem(`tgf4_hist_${key}_csvLog`, JSON.stringify(log));
+  localStorage.removeItem(`tgf4_hist_${key}_csv_${csvId}`);
+  rebuildHistMaster(key);
+  syncHistRevenueToFinance(key);
+  renderHistorySection();
+}
+
 function loadHistMaster(key) {
-  // Try new master key first, fall back to old 365d key for backward compat
+  // Try master key first, fall back to legacy keys for backward compat
   for (const k of [`tgf4_hist_${key}_master`, `tgf4_hist_${key}_365d`, `tgf4_hist_${key}_90d`]) {
     try { const s = localStorage.getItem(k); if (s) return JSON.parse(s); } catch(e) {}
   }
   return null;
 }
+
 function getHistData(key, period) {
   const master = loadHistMaster(key);
   if (!master || !master.length) return null;
   if (period === '365') return master;
   const days = period === '28' ? 28 : 90;
-  // Filter by actual calendar dates from the most recent entry — NOT by record count
+  // Filter by actual calendar dates from most recent entry, NOT by record count
   const mostRecent = new Date(master[master.length - 1].date);
   const cutoff = new Date(mostRecent.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
   const filtered = master.filter(r => new Date(r.date) >= cutoff);
   return filtered.length > 0 ? filtered : master.slice(-days);
 }
+
+// saveHistData: used by API sync only (not CSV uploads)
 function saveHistData(key, newRows) {
-  // Merge new rows into master — new rows win on duplicate dates, old rows preserved otherwise
-  const master = loadHistMaster(key) || [];
-  const byDate = {};
-  master.forEach(r => { byDate[r.date] = r; });
-  newRows.forEach(r => { byDate[r.date] = r; });
-  const merged = Object.values(byDate).sort((a,b) => new Date(a.date) - new Date(b.date));
-  localStorage.setItem(`tgf4_hist_${key}_master`, JSON.stringify(merged));
+  localStorage.setItem(`tgf4_hist_${key}_api`, JSON.stringify(newRows));
   localStorage.setItem(`tgf4_hist_${key}_lastUpdate`, new Date().toISOString());
-  return merged;
+  return rebuildHistMaster(key);
 }
 
-// Sync monthly AdSense revenue from history CSV into the earnings log automatically
+// Sync monthly AdSense revenue from history into the earnings log — REPLACE, never stack
 function syncHistRevenueToFinance(key) {
-  const master = loadHistMaster(key);
-  if (!master || !master.length) return;
   const def = CHANNEL_DEFS.find(d => d.key === key);
   if (!def) return;
 
-  // Group revenue by YYYY-MM month
-  const byMonth = {};
-  master.forEach(r => {
-    if (!r.revenue || r.revenue <= 0) return;
-    const month = (r.date || '').substring(0, 7);
-    if (!month || month.length < 7) return;
-    byMonth[month] = (byMonth[month] || 0) + r.revenue;
-  });
+  // Always wipe existing auto-entries for this channel first (prevents stacking on re-upload)
+  const prefix = `ytrev_${key}_`;
+  earningsLog = earningsLog.filter(e => !((e.id || '').startsWith(prefix)));
 
-  let changed = false;
-  Object.entries(byMonth).forEach(([month, amount]) => {
-    const rounded = Math.round(amount * 100) / 100;
-    if (rounded <= 0) return;
-    const autoId = `ytrev_${key}_${month}`;
-    const idx = earningsLog.findIndex(e => e.id === autoId);
-    if (idx >= 0) {
-      if (Math.abs(earningsLog[idx].amount - rounded) > 0.005) {
-        earningsLog[idx].amount = rounded;
-        changed = true;
-      }
-    } else {
-      earningsLog.push({ id: autoId, date: month, channel: def.name, type: 'AdSense', amount: rounded, notes: 'Auto from YouTube CSV' });
-      changed = true;
-    }
-  });
-
-  if (changed) {
-    localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
-    // Refresh finance UI if rendered
-    if (typeof renderEarningsLog    === 'function') renderEarningsLog();
-    if (typeof renderMonthlyPnL     === 'function') renderMonthlyPnL();
-    if (typeof renderChannelTargets === 'function') renderChannelTargets();
-    if (typeof updateRevProgress    === 'function') updateRevProgress();
+  const master = loadHistMaster(key);
+  if (master && master.length) {
+    // Group revenue by YYYY-MM
+    const byMonth = {};
+    master.forEach(r => {
+      if (!r.revenue || r.revenue <= 0) return;
+      const month = (r.date || '').substring(0, 7);
+      if (month.length < 7) return;
+      byMonth[month] = (byMonth[month] || 0) + r.revenue;
+    });
+    Object.entries(byMonth).forEach(([month, amount]) => {
+      const rounded = Math.round(amount * 100) / 100;
+      if (rounded <= 0) return;
+      earningsLog.push({ id: `${prefix}${month}`, date: month, channel: def.name, type: 'AdSense', amount: rounded, notes: 'Auto from YouTube CSV' });
+    });
   }
+
+  localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
+  if (typeof renderEarningsLog    === 'function') renderEarningsLog();
+  if (typeof renderMonthlyPnL     === 'function') renderMonthlyPnL();
+  if (typeof renderChannelTargets === 'function') renderChannelTargets();
+  if (typeof updateRevProgress    === 'function') updateRevProgress();
 }
 
 function showChannelHistory(key) {
@@ -3403,6 +3444,32 @@ function renderHistorySection() {
       ${dataStatus}
     </div>
   </div>`;
+
+  // CSV log panel
+  const csvLog = getCsvLog(histKey);
+  const fmtDate = iso => new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const fmtShort = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}) : '—';
+  if (csvLog.length > 0) {
+    html += `<div class="card" style="padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.7px;text-transform:uppercase;margin-bottom:10px">📂 Uploaded CSVs</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="color:var(--muted)">
+          <th style="text-align:left;padding:4px 8px">File</th>
+          <th style="text-align:left;padding:4px 8px">Date Range</th>
+          <th style="text-align:left;padding:4px 8px">Rows</th>
+          <th style="text-align:left;padding:4px 8px">Uploaded</th>
+          <th style="padding:4px 8px"></th>
+        </tr></thead>
+        <tbody>${csvLog.map(c => `<tr style="border-top:1px solid var(--border)">
+          <td style="padding:6px 8px;color:var(--text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.filename}">${c.filename}</td>
+          <td style="padding:6px 8px;color:var(--muted)">${fmtShort(c.from)} – ${fmtShort(c.to)}</td>
+          <td style="padding:6px 8px;color:var(--muted)">${c.rowCount}</td>
+          <td style="padding:6px 8px;color:var(--muted)">${fmtDate(c.uploadedAt)}</td>
+          <td style="padding:6px 8px"><button class="edit-btn" style="color:#ef4444" onclick="deleteCsvUpload('${histKey}','${c.id}')" title="Delete this CSV">🗑</button></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+  }
 
   if (!data || !data.length) {
     const periodLabel = histPeriod === '28' ? '28-day' : histPeriod === '90' ? '90-day' : '365-day';
@@ -3565,22 +3632,22 @@ function drawHistCharts(data) {
 function handleHistoryCsv(key) {
   const input = document.getElementById('hist-csv-input');
   if (!input || !input.files[0]) return;
+  const filename = input.files[0].name;
   const reader = new FileReader();
   reader.onload = e => {
     try {
       const rows = parseHistoryCsv(e.target.result);
       if (rows.length < 1) throw new Error('No data rows found in this CSV');
-      const master = saveHistData(key, rows);
+      const master = saveCsvUpload(key, filename, rows);
       syncHistRevenueToFinance(key);
       renderHistorySection();
-      // Brief feedback
       const statusEl = document.getElementById('hist-upload-status');
       if (statusEl) {
-        statusEl.textContent = `✓ Merged ${rows.length} rows — ${master.length} days total · Finance tracker updated`;
+        statusEl.textContent = `✓ ${rows.length} rows added — ${master.length} days total · Finance updated`;
         statusEl.style.color = '#22c55e';
       }
     } catch(err) {
-      alert('Could not parse CSV: ' + err.message + '\n\nSupported formats: YouTube Studio Channel Overview CSV (Analytics → Advanced Mode → Export) or Content tab CSV.');
+      alert('Could not parse CSV: ' + err.message + '\n\nSupported formats: YouTube Studio Channel Overview CSV (Analytics → Advanced Mode → Export) or the Content tab CSV.');
     }
   };
   reader.readAsText(input.files[0]);
