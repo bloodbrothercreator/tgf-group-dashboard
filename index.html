@@ -36,7 +36,9 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
 }
 .nav-item:hover { color: var(--text); background: var(--surface2); }
 .nav-item.active { color: var(--gold); background: var(--gold-glow); border-left-color: var(--gold); }
-.nav-item .icon { font-size: 14px; opacity: .7; }
+.nav-item .icon { display: flex; align-items: center; flex-shrink: 0; opacity: .65; }
+.nav-item.active .icon { opacity: 1; }
+.nav-item:hover .icon { opacity: .9; }
 .sidebar-footer { margin-top: auto; padding: 16px 18px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); }
 
 /* ── MAIN ── */
@@ -449,41 +451,41 @@ input[type="month"].form-input { color-scheme: dark; }
 
   <div class="nav-group-label">Operations</div>
   <a class="nav-item active" data-section="overview" onclick="nav(this)">
-    <span class="icon">⊞</span> Overview
+    <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span> Overview
   </a>
   <a class="nav-item" data-section="orgchart" onclick="nav(this)">
-    <span class="icon">◈</span> Org Chart
+    <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><rect x="2" y="18" width="6" height="4" rx="1"/><rect x="9" y="18" width="6" height="4" rx="1"/><rect x="16" y="18" width="6" height="4" rx="1"/><path d="M12 6v4m0 0H5v8m7-8v8m7-8v8"/></svg></span> Org Chart
   </a>
   <a class="nav-item" data-section="hires" onclick="nav(this)">
-    <span class="icon">⊕</span> Hire Tracker
+    <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></span> Hire Tracker
   </a>
   <a class="nav-item" data-section="calendar" onclick="nav(this)">
-    <span class="icon">📅</span> Calendar
+    <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Calendar
   </a>
   <a class="nav-item" data-section="notion" onclick="nav(this);loadNotionIfNeeded()">
-    <span class="icon">◻</span> Notion Tasks
+    <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> Notion Tasks
   </a>
 
   <div class="nav-group-label">Finance</div>
   <a class="nav-item" data-section="financial" onclick="nav(this)">
-    <span class="icon">₤</span> Financial Tracker
+    <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span> Financial Tracker
   </a>
   <a class="nav-item" data-section="staffcosts" onclick="nav(this)">
-    <span class="icon">◎</span> Staff Costs
+    <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Staff Costs
   </a>
   <a class="nav-item" data-section="deals" onclick="nav(this)">
-    <span class="icon">🤝</span> Brand Deals
+    <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span> Brand Deals
   </a>
 
   <div class="nav-group-label">Growth</div>
   <a class="nav-item" data-section="channels" onclick="nav(this);renderHistorySection()">
-    <span class="icon">▶</span> Channels
+    <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></span> Channels
   </a>
   <a class="nav-item" data-section="milestones" onclick="nav(this)">
-    <span class="icon">◆</span> Milestones
+    <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></span> Milestones
   </a>
   <a class="nav-item" data-section="risks" onclick="nav(this)">
-    <span class="icon">⚠</span> Risk Register
+    <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span> Risk Register
   </a>
 
   <div class="sidebar-footer">
