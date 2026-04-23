@@ -2751,8 +2751,30 @@ function renderChannelCards() {
   const grid = document.getElementById('channels-grid');
   if (!grid) return;
   grid.innerHTML = CHANNEL_DEFS.map(def => {
-    const a = channelAnalytics[def.key] || DEFAULT_ANALYTICS[def.key];
-    const rpm = a.views28 > 0 && a.revenue > 0 ? (a.revenue / (a.views28 / 1000)).toFixed(2) : '—';
+    const a   = channelAnalytics[def.key] || DEFAULT_ANALYTICS[def.key];
+    const h   = deriveStatsFromHistory(def.key); // null if no CSV uploaded
+
+    // Prefer history-derived values; fall back to manually-entered
+    const views28      = h ? h.views28      : a.views28;
+    const watchTimeHrs = h ? h.watchTimeHrs : a.watchTimeHrs;
+    const revenue      = h ? h.revenue      : a.revenue;
+    const subsGained   = h ? h.subsGained   : a.subsGained;
+    const impressions  = h ? h.impressions  : a.impressions;
+    const ctr          = h ? h.ctr          : a.ctr;
+    const avgViewDur   = h ? h.avgViewDur   : a.avgViewDur;
+
+    // Subscribers: use formatted string from channelAnalytics (manually set or from analytics modal)
+    // but if history has an absolute count and no manual value, format it
+    let subsDisplay = a.subs || '—';
+    if ((!subsDisplay || subsDisplay === '—') && h && h.histSubs) {
+      subsDisplay = fmtSubsDisplay(h.histSubs);
+    }
+
+    const wtDisplay = watchTimeHrs >= 1000 ? fmtNum(Math.round(watchTimeHrs))+'h' : watchTimeHrs > 0 ? Math.round(watchTimeHrs)+'h' : '—';
+    const rpm = views28 > 0 && revenue > 0 ? (revenue / (views28 / 1000)).toFixed(2) : '—';
+    const srcBadge = h ? `<span style="font-size:9px;background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);border-radius:3px;padding:1px 5px;font-weight:600" title="Stats derived from history CSV — last entry ${h.dataEnd}">CSV</span>` : '';
+    const lastUpdate = h ? h.dataEnd : a.lastUpdated;
+
     return `
     <div class="channel-card">
       <div class="channel-card-header">
@@ -2766,18 +2788,18 @@ function renderChannelCards() {
         </div>
       </div>
       <div class="ch-metrics-row">
-        <div class="ch-metric"><div class="m-label">Subscribers</div><div class="m-val">${a.subs || '—'}</div></div>
-        <div class="ch-metric"><div class="m-label">28-Day Views</div><div class="m-val">${fmtNum(a.views28)}</div></div>
-        <div class="ch-metric"><div class="m-label">Watch Time</div><div class="m-val">${a.watchTimeHrs >= 1000 ? fmtNum(Math.round(a.watchTimeHrs))+'h' : a.watchTimeHrs > 0 ? Math.round(a.watchTimeHrs)+'h' : '—'}</div></div>
-        <div class="ch-metric"><div class="m-label">Avg View Dur</div><div class="m-val">${fmtDur(a.avgViewDur)}</div></div>
-        <div class="ch-metric"><div class="m-label">Impressions</div><div class="m-val">${fmtNum(a.impressions)}</div></div>
-        <div class="ch-metric"><div class="m-label">CTR</div><div class="m-val">${a.ctr > 0 ? a.ctr.toFixed(2)+'%' : '—'}</div></div>
+        <div class="ch-metric"><div class="m-label">Subscribers</div><div class="m-val">${subsDisplay}</div></div>
+        <div class="ch-metric"><div class="m-label">28-Day Views</div><div class="m-val">${fmtNum(views28)}</div></div>
+        <div class="ch-metric"><div class="m-label">Watch Time</div><div class="m-val">${wtDisplay}</div></div>
+        <div class="ch-metric"><div class="m-label">Avg View Dur</div><div class="m-val">${fmtDur(avgViewDur)}</div></div>
+        <div class="ch-metric"><div class="m-label">Impressions</div><div class="m-val">${fmtNum(impressions)}</div></div>
+        <div class="ch-metric"><div class="m-label">CTR</div><div class="m-val">${ctr > 0 ? ctr.toFixed(2)+'%' : '—'}</div></div>
       </div>
       <div class="ch-analytics-footer">
         <div>
-          <div style="font-size:11px;color:var(--gold);font-weight:700">£${a.revenue > 0 ? a.revenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '0'} <span style="color:var(--muted);font-weight:400;font-size:10px">28d rev</span></div>
+          <div style="font-size:11px;color:var(--gold);font-weight:700">£${revenue > 0 ? revenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '0'} <span style="color:var(--muted);font-weight:400;font-size:10px">28d rev</span> ${srcBadge}</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
-            ${lastUpdatedBadge(a.lastUpdated)}
+            ${lastUpdatedBadge(lastUpdate)}
             <span style="font-size:10px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:3px" onclick="openCadenceModal('${def.key}')" title="Edit upload cadence">${a.cadence || 'Set cadence'} <span style="opacity:0.5;font-size:9px">✏</span></span>
           </div>
         </div>
@@ -2790,6 +2812,14 @@ function renderChannelCards() {
       <div style="font-size:11px;color:var(--muted);margin-top:4px">${def.health}</div>
     </div>`;
   }).join('');
+}
+
+// Format a raw subscriber number to a display string like 6.14M, 554K
+function fmtSubsDisplay(n) {
+  if (!n || n <= 0) return '—';
+  if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(Math.round(n));
 }
 
 // ── Analytics Modal ──
@@ -3364,6 +3394,32 @@ function loadHistMaster(key) {
     try { const s = localStorage.getItem(k); if (s) return JSON.parse(s); } catch(e) {}
   }
   return null;
+}
+
+// Derive channel card stats from last 28 calendar days of history CSV data
+function deriveStatsFromHistory(key) {
+  const data = loadHistMaster(key);
+  if (!data || !data.length) return null;
+  // Use last 28 calendar days ending on most recent date in data
+  const last = data[data.length - 1].date;
+  const cutoff = new Date(last + 'T00:00:00');
+  cutoff.setDate(cutoff.getDate() - 27); // 28 inclusive days
+  const cutoffStr = calDateStr(cutoff);
+  const win = data.filter(r => r.date >= cutoffStr);
+  if (!win.length) return null;
+  const views28      = win.reduce((s,r) => s + (r.views || 0), 0);
+  const watchTimeHrs = win.reduce((s,r) => s + (r.watchTimeHrs || 0), 0);
+  const revenue      = win.reduce((s,r) => s + (r.revenue || 0), 0);
+  const subsGained   = win.reduce((s,r) => s + (r.subsGained || 0), 0);
+  const impressions  = win.reduce((s,r) => s + (r.impressions || 0), 0);
+  // Impressions-weighted CTR average
+  const ctrSum = win.reduce((s,r) => s + (r.ctr || 0) * (r.impressions || 0), 0);
+  const ctr = impressions > 0 ? ctrSum / impressions : win.reduce((s,r) => s + (r.ctr||0), 0) / win.filter(r=>r.ctr>0).length || 0;
+  const avgViewDur = views28 > 0 && watchTimeHrs > 0 ? (watchTimeHrs * 3600 / views28) : 0;
+  // Most recent non-null absolute subscriber count from history
+  const lastSubRow = [...data].reverse().find(r => r.subs != null && r.subs > 0);
+  const histSubs = lastSubRow ? lastSubRow.subs : null;
+  return { views28, watchTimeHrs, revenue, subsGained, impressions, ctr, avgViewDur, histSubs, dataEnd: last };
 }
 
 function getHistData(key, period) {
