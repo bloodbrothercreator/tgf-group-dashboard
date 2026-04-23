@@ -3670,7 +3670,16 @@ function drawHistCharts(data, key) {
   });
 
   // Total subscriber count line — anchor to known current subs if available
-  const knownSubs = (key && channelAnalytics[key]?.subs) ? channelAnalytics[key].subs : 0;
+  // Parse subs which may be stored as '6.14M', '554K', or a raw number
+  const parseSubStr = v => {
+    if (!v) return 0;
+    if (typeof v === 'number') return v;
+    const s = String(v).replace(/,/g,'').trim();
+    if (/[Mm]$/.test(s)) return parseFloat(s) * 1e6;
+    if (/[Kk]$/.test(s)) return parseFloat(s) * 1e3;
+    return parseFloat(s) || 0;
+  };
+  const knownSubs = parseSubStr(key && channelAnalytics[key]?.subs);
   const hasSubs = filled.some(r => r.subs !== null && r.subs !== 0);
   let subVals;
   if (hasSubs) {
@@ -3679,7 +3688,7 @@ function drawHistCharts(data, key) {
     let running = 0;
     subVals = filled.map(r => { running += (r.subsGained||0)-(r.subsLost||0); return running; });
   }
-  // If we have a real subscriber count, shift the whole series so the last real value = knownSubs
+  // Shift the whole series so the last non-null value equals the real current subscriber count
   if (knownSubs > 0) {
     const lastReal = [...subVals].reverse().find(v => v !== null && v !== undefined);
     if (lastReal !== undefined) {
@@ -3687,12 +3696,22 @@ function drawHistCharts(data, key) {
       subVals = subVals.map(v => v !== null && v !== undefined ? v + offset : null);
     }
   }
+  // Y-axis formatter: show e.g. "6.14M" or "554K"
+  const fmtSubTick = v => {
+    if (v >= 1e6) return (v/1e6).toFixed(2).replace(/\.?0+$/,'') + 'M';
+    if (v >= 1e3) return (v/1e3).toFixed(1).replace(/\.?0+$/,'') + 'K';
+    return Math.round(v).toLocaleString();
+  };
+  const subsOpts = makeOpts(v => v !== null ? fmtSubTick(Math.round(v)) : '');
+  // Also apply fmtSubTick to y-axis tick labels
+  subsOpts.scales.y.ticks.callback = fmtSubTick;
+
   const subsEl = document.getElementById('chart-hist-subs');
   if (subsEl) {
     _histCharts.subs = new Chart(subsEl.getContext('2d'), {
       type: 'line',
       data: { labels, datasets: [{ data: subVals, borderColor: '#72C2E8', backgroundColor: 'rgba(114,194,232,.08)', fill: true, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.3, spanGaps: true }] },
-      options: makeOpts(v => v !== null ? Math.round(v).toLocaleString() : '')
+      options: subsOpts
     });
   }
 
