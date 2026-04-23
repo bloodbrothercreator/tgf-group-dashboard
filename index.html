@@ -545,13 +545,13 @@ input[type="month"].form-input { color-scheme: dark; }
     <div class="stat-card">
       <div class="stat-label">Monthly Revenue</div>
       <div class="stat-value gold">£<span id="kpi-revenue">0</span></div>
-      <div class="stat-sub" id="kpi-revenue-sub">Auto-calculated from earnings log</div>
-      <div class="stat-badge badge-green">▲ Live Total</div>
+      <div class="stat-sub" id="kpi-revenue-sub">Loading…</div>
+      <div class="stat-badge badge-green">▲ This Month</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Revenue Target</div>
       <div class="stat-value">£<span id="kpi-target">200,000</span></div>
-      <div class="stat-sub">Edit target on Financial Tracker page</div>
+      <div class="stat-sub">Set per-channel targets in Financial Tracker</div>
       <div class="progress-wrap" style="margin-top:10px">
         <div class="progress-bar" id="revenue-progress" style="width:0%"></div>
       </div>
@@ -1601,10 +1601,10 @@ function restoreEdits() {
 //  REVENUE HELPERS
 // ══════════════════════════════════════════
 function getRevTotal() {
-  return earningsLog.reduce((s, e) => s + Number(e.amount), 0);
+  // Current month's revenue only — matches getRevTarget() which is also per-month
+  return getMonthLog(earningsLog, getCurrentMonthKey()).reduce((s, e) => s + Number(e.amount), 0);
 }
 function getRevTarget() {
-  // sum of current calendar month's targets (for Overview section)
   const t = getMonthTargets(getCurrentMonthKey());
   const sum = Object.values(t).reduce((a,b) => a+Number(b), 0);
   return sum > 0 ? sum : 200000;
@@ -1619,9 +1619,11 @@ function updateRevProgress() {
   const revEl = document.getElementById('kpi-revenue');
   const tgtEl = document.getElementById('kpi-target');
   const sub   = document.getElementById('kpi-revenue-sub');
-  if (revEl) revEl.textContent = rev.toLocaleString();
+  const monthLabel = formatMonthLabel(getCurrentMonthKey());
+  const monthEntries = getMonthLog(earningsLog, getCurrentMonthKey()).length;
+  if (revEl) revEl.textContent = rev.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
   if (tgtEl) tgtEl.textContent = tgt.toLocaleString();
-  if (sub)   sub.textContent   = rev > 0 ? 'From ' + earningsLog.length + ' logged entries' : 'No entries yet — add on Financial Tracker';
+  if (sub)   sub.textContent   = monthEntries > 0 ? monthLabel + ' · ' + monthEntries + ' entries' : monthLabel + ' · No entries yet';
 
   const bar   = document.getElementById('revenue-progress');
   const pctEl = document.getElementById('revenue-pct');
@@ -1644,31 +1646,32 @@ function renderOverviewBreakdown() {
   const totalEl = document.getElementById('overview-rev-total');
   if (!tbody) return;
 
-  // Group by channel
-  const totals = {};
-  earningsLog.forEach(e => {
-    totals[e.channel] = (totals[e.channel] || 0) + Number(e.amount);
-  });
+  const month = getCurrentMonthKey();
+  const targets = getMonthTargets(month);
+  const monthLog = getMonthLog(earningsLog, month);
 
-  const allChannels = ['TGFbro','Gaming','Group','Food','Troof or Miff','Live','Max'];
-  // Add any channels from the log not in the default list
-  Object.keys(totals).forEach(ch => { if (!allChannels.includes(ch)) allChannels.push(ch); });
+  // Group current month's earnings by channel
+  const actuals = {};
+  monthLog.forEach(e => { actuals[e.channel] = (actuals[e.channel] || 0) + Number(e.amount); });
 
-  const rows = allChannels.map(ch => {
-    const amt = totals[ch] || 0;
-    const pill = amt > 0
-      ? '<span class="pill pill-green">Active</span>'
-      : '<span class="pill pill-muted">No entries</span>';
+  // Show all channels that have a target or actual this month
+  const channelSet = new Set([...CHANNELS, ...Object.keys(actuals)]);
+  const rows = [...channelSet].map(ch => {
+    const amt = actuals[ch] || 0;
+    const tgt = Number(targets[ch] || 0);
+    const pct = tgt > 0 ? Math.min(100, Math.round(amt / tgt * 100)) : null;
+    const color = amt >= tgt && tgt > 0 ? 'var(--green)' : amt > 0 ? 'var(--gold)' : 'var(--muted)';
+    const pctStr = pct !== null ? `<span style="font-size:10px;color:var(--muted)">${pct}% of £${tgt.toLocaleString()}</span>` : '';
     return `<tr>
       <td><strong>${ch}</strong></td>
-      <td style="color:${amt > 0 ? 'var(--gold)' : 'var(--muted)'};font-weight:${amt > 0 ? '700' : '400'}">£${amt.toLocaleString()}</td>
-      <td>${pill}</td>
+      <td style="color:${color};font-weight:${amt > 0 ? '700' : '400'}">£${amt.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td>${pctStr}</td>
     </tr>`;
   }).join('');
 
   tbody.innerHTML = rows;
-  const total = Object.values(totals).reduce((s,v) => s+v, 0);
-  if (totalEl) totalEl.textContent = '£' + total.toLocaleString();
+  const total = monthLog.reduce((s,e) => s + Number(e.amount), 0);
+  if (totalEl) totalEl.textContent = '£' + total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
 // ══════════════════════════════════════════
