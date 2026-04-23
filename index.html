@@ -1251,12 +1251,22 @@ function renderOrgBox(node) {
     ? (getLinkedHire(node) ? 'Open Hire' : 'Open Hire')
     : { founder:'Founder / Principal', bbm:'BBM · Central', tgf:'TGF Employed' }[node.type] || '';
 
+  // Shared-from indicator (person appears in multiple silos, cost counted in home silo)
+  let sharedHtml = '';
+  if (node.sharedFrom) {
+    const src = orgData.find(n => n.id === node.sharedFrom);
+    const siloNames = { central:'Central', tgfbro:'TGFbro', gaming:'Gaming', troof:'Troof', food:'TGF Food', live:'TGF Live', max:'TGF Max' };
+    const homeSilo = src ? (siloNames[src.silo] || src.silo) : '?';
+    sharedHtml = `<div style="font-size:9px;color:var(--blue);margin-top:5px;padding-top:5px;border-top:1px solid var(--border)">↗ Shared · cost in ${homeSilo}</div>`;
+  }
+
   return `<div class="org-node-box ${cls}" onclick="editOrgNode('${node.id}')">
     <div class="oname">${node.name}</div>
     <div class="orole">${node.role}</div>
     <div class="otype" style="color:${typeColor}">${typeLabel}</div>
-    ${node.salary ? `<div class="osalary">£${Number(node.salary).toLocaleString()}/mo</div>` : ''}
+    ${node.salary && !node.sharedFrom ? `<div class="osalary">£${Number(node.salary).toLocaleString()}/mo</div>` : ''}
     ${node.note ? `<div class="onote">${node.note}</div>` : ''}
+    ${sharedHtml}
     ${hireStatusHtml}
   </div>`;
 }
@@ -1264,7 +1274,9 @@ function renderOrgBox(node) {
 function renderOrgTotals(siloId) {
   const bar = document.getElementById('org-totals-bar');
   if (!bar) return;
-  const nodes = orgData.filter(n => n.silo === siloId && !n.note.toLowerCase().includes('counted'));
+  // Exclude shared nodes (sharedFrom set) — their salary is counted in home silo
+  // Also exclude nodes with "counted" in the note (legacy flag)
+  const nodes = orgData.filter(n => n.silo === siloId && !n.sharedFrom && !n.note.toLowerCase().includes('counted'));
   const paid  = nodes.filter(n => n.type !== 'hire').reduce((s,n) => s + (Number(n.salary)||0), 0);
   const hires = nodes.filter(n => n.type === 'hire').reduce((s,n) => s + (Number(n.salary)||0), 0);
   bar.innerHTML = [
@@ -1286,10 +1298,24 @@ function orgFormHtml(node) {
   const reportOpts = `<option value="">— None (root) —</option>` +
     orgData.filter(n => !node || n.id !== node.id).map(n => `<option value="${n.id}" ${node && node.reportsTo===n.id ? 'selected':''}>${n.name} — ${n.role.slice(0,32)}</option>`).join('') +
     `<option value="founders" ${node && node.reportsTo==='founders' ? 'selected':''}>Founders (Central root)</option>`;
+  // People that can be cloned (non-hire nodes)
+  const cloneablePeople = orgData.filter(n => n.type !== 'hire');
   return `
+    ${!node ? `
+    <div style="padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--border)">
+      <label class="form-label">Add existing team member to this silo</label>
+      <select class="form-input" id="of-copy-from" onchange="orgCopyFrom(this.value)">
+        <option value="">— Or fill in details below to add someone new —</option>
+        ${cloneablePeople.map(p => `<option value="${p.id}">${p.name} — ${p.role.slice(0,40)}</option>`).join('')}
+      </select>
+      <div id="of-shared-notice" style="display:none;margin-top:8px;font-size:11px;color:var(--blue);background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:6px;padding:7px 10px">
+        ↗ This person will appear in the selected silo. Their salary <strong>will not</strong> be added to that silo's cost — it stays counted in their home silo.
+      </div>
+      <input type="hidden" id="of-sharedfrom" value="">
+    </div>` : ''}
     <div class="form-row">
-      <div class="form-field"><label>Name</label><input id="of-name" value="${node ? node.name : ''}"></div>
-      <div class="form-field"><label>Role / Title</label><input id="of-role" value="${node ? node.role : ''}"></div>
+      <div class="form-field"><label>Name</label><input class="form-input" id="of-name" value="${node ? node.name : ''}"></div>
+      <div class="form-field"><label>Role / Title</label><input class="form-input" id="of-role" value="${node ? node.role : ''}"></div>
     </div>
     <div class="form-row">
       <div class="form-field"><label>Category (colour)</label><select id="of-type">${typeOpts}</select></div>
@@ -1339,18 +1365,41 @@ function deleteOrgNode(id) {
   renderOrgSection(currentOrgSilo);
 }
 
+function orgCopyFrom(id) {
+  const sf = document.getElementById('of-sharedfrom');
+  const notice = document.getElementById('of-shared-notice');
+  if (!id) {
+    if (sf) sf.value = '';
+    if (notice) notice.style.display = 'none';
+    return;
+  }
+  const source = orgData.find(n => n.id === id);
+  if (!source) return;
+  document.getElementById('of-name').value   = source.name;
+  document.getElementById('of-role').value   = source.role;
+  document.getElementById('of-type').value   = source.type;
+  const salaryEl = document.getElementById('of-salary');
+  if (salaryEl) salaryEl.value = source.salary || '';
+  const noteEl = document.getElementById('of-note');
+  if (noteEl) noteEl.value = source.note || '';
+  if (sf) sf.value = id;
+  if (notice) notice.style.display = '';
+}
+
 function openAddOrgModal() {
   const tempId = 'org_' + Date.now();
   openModal('Add Team Member', orgFormHtml(null), () => {
+    const sharedFromEl = document.getElementById('of-sharedfrom');
     const newNode = {
-      id:        tempId,
-      name:      document.getElementById('of-name').value.trim() || 'New Member',
-      role:      document.getElementById('of-role').value.trim() || 'Role TBD',
-      type:      document.getElementById('of-type').value,
-      silo:      document.getElementById('of-silo').value,
-      salary:    parseFloat(document.getElementById('of-salary').value) || 0,
-      reportsTo: document.getElementById('of-reports').value || null,
-      note:      document.getElementById('of-note').value.trim(),
+      id:         tempId,
+      name:       document.getElementById('of-name').value.trim() || 'New Member',
+      role:       document.getElementById('of-role').value.trim() || 'Role TBD',
+      type:       document.getElementById('of-type').value,
+      silo:       document.getElementById('of-silo').value,
+      salary:     parseFloat(document.getElementById('of-salary').value) || 0,
+      reportsTo:  document.getElementById('of-reports').value || null,
+      note:       document.getElementById('of-note').value.trim(),
+      sharedFrom: sharedFromEl && sharedFromEl.value ? sharedFromEl.value : null,
     };
     orgData.push(newNode);
     localStorage.setItem('tgf4_org', JSON.stringify(orgData));
