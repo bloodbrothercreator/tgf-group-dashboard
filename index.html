@@ -3584,8 +3584,11 @@ function computeHistMetrics(data) {
   const totalSubsLost  = data.reduce((s,r)=>s+(r.subsLost||0),0);
   const firstSubs = data[0].subs || 0;
   const lastSubs  = data[data.length-1].subs || 0;
-  const subDelta  = firstSubs && lastSubs ? lastSubs - firstSubs : totalSubsGained - totalSubsLost;
-  const subDeltaPct = firstSubs > 0 ? (subDelta / firstSubs * 100) : 0;
+  // subDelta: prefer last-first if subs looks like absolute counts (large numbers),
+  // otherwise use net gained/lost (cumulative chart starts at 0)
+  const subsLookAbsolute = lastSubs > 1000 || firstSubs > 1000;
+  const subDelta  = subsLookAbsolute ? lastSubs - firstSubs : totalSubsGained - totalSubsLost;
+  const subDeltaPct = (firstSubs > 0 && subsLookAbsolute) ? (subDelta / firstSubs * 100) : 0;
   const bestSubRow  = data.reduce((b,r)=>(r.subsGained||0)>(b.subsGained||0)?r:b, data[0]);
   const last7  = data.slice(-7).reduce((s,r)=>s+(r.views||0),0);
   const prev7  = data.slice(-14,-7).reduce((s,r)=>s+(r.views||0),0);
@@ -3832,6 +3835,21 @@ function parseHistoryCsv(csvText) {
     });
   }
   rows.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  // YouTube Studio "Overview" CSV: the "Subscribers" column is the daily NET change,
+  // not an absolute count. If there's no separate "Subscribers Gained" column, remap:
+  // store the daily delta as subsGained and build cumulative subs for the growth chart.
+  if (cGained < 0 && cSubs >= 0) {
+    let cumSubs = 0;
+    rows.forEach(r => {
+      const netChange = r.subs || 0;      // was misread as absolute count
+      r.subsGained = netChange > 0 ? netChange : 0;
+      r.subsLost   = netChange < 0 ? Math.abs(netChange) : 0;
+      cumSubs += netChange;
+      r.subs = cumSubs;                   // now truly cumulative (relative to upload start)
+    });
+  }
+
   return rows;
 }
 
