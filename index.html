@@ -145,10 +145,10 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
 .silo-connector { font-size: 11px; color: var(--muted); padding: 0 0 0 4px; margin-bottom: 2px; }
 
 /* ── CHANNEL CARDS ── */
-.channel-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
-.channel-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
-.channel-name { font-size: 15px; font-weight: 700; }
-.channel-handle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.channel-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+.channel-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.channel-name { font-size: 13px; font-weight: 700; }
+.channel-handle { font-size: 11px; color: var(--muted); margin-top: 1px; }
 .channel-stat-row { display: flex; gap: 16px; flex-wrap: wrap; }
 .channel-stat .label { font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
 .channel-stat .val   { font-size: 15px; font-weight: 700; margin-top: 2px; }
@@ -331,14 +331,17 @@ input[type="month"].form-input { color-scheme: dark; }
 .ch-last-updated.fresh { background: rgba(34,197,94,.12); color: var(--green); border: 1px solid rgba(34,197,94,.25); }
 .ch-last-updated.stale { background: rgba(245,158,11,.12); color: var(--amber); border: 1px solid rgba(245,158,11,.25); }
 .ch-last-updated.never { background: rgba(107,114,128,.1); color: var(--muted); border: 1px solid var(--border); }
-.ch-analytics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-@media (max-width: 1100px) { .ch-analytics-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 700px) { .ch-analytics-grid { grid-template-columns: 1fr; } }
-.ch-analytics-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
-.ch-metrics-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-.ch-metric { background: var(--surface2); border-radius: 8px; padding: 8px 12px; }
-.ch-metric .m-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
-.ch-metric .m-val { font-size: 14px; font-weight: 700; color: var(--text); margin-top: 2px; }
+.ch-analytics-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+@media (max-width: 1400px) { .ch-analytics-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 900px)  { .ch-analytics-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .ch-analytics-grid { grid-template-columns: 1fr; } }
+.ch-analytics-footer { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.ch-analytics-footer-btns { display: flex; gap: 6px; }
+.ch-analytics-footer-btns button { flex: 1; font-size: 10px; padding: 5px 6px; }
+.ch-metrics-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.ch-metric { background: var(--surface2); border-radius: 6px; padding: 6px 8px; }
+.ch-metric .m-label { font-size: 9px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.ch-metric .m-val { font-size: 12px; font-weight: 700; color: var(--text); margin-top: 1px; }
 
 /* ── MORNING BRIEFING ── */
 .briefing-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; margin-bottom: 20px; }
@@ -475,6 +478,9 @@ input[type="month"].form-input { color-scheme: dark; }
   <div class="nav-group-label">Growth</div>
   <a class="nav-item" data-section="channels" onclick="nav(this)">
     <span class="icon">▶</span> Channels
+  </a>
+  <a class="nav-item" data-section="history" onclick="nav(this);renderHistorySection()">
+    <span class="icon">📈</span> Growth History
   </a>
   <a class="nav-item" data-section="milestones" onclick="nav(this)">
     <span class="icon">◆</span> Milestones
@@ -881,7 +887,15 @@ input[type="month"].form-input { color-scheme: dark; }
   <div class="ch-analytics-grid" id="channels-grid">
     <!-- Populated by JS -->
   </div>
-  <div id="ch-history-section" style="display:none;margin-top:24px"></div>
+</section>
+
+<!-- ══════════════ GROWTH HISTORY ══════════════ -->
+<section class="section" id="history">
+  <div class="page-header">
+    <h1>Growth History</h1>
+    <p>Upload a 365-day YouTube Studio CSV for each channel — 28d and 90d views derive automatically.</p>
+  </div>
+  <div id="ch-history-section"></div>
 </section>
 
 <!-- ══════════════ MILESTONES ══════════════ -->
@@ -2765,14 +2779,16 @@ function renderChannelCards() {
       </div>
       <div class="ch-analytics-footer">
         <div>
-          <div style="font-size:12px;color:var(--gold);font-weight:700">£${a.revenue > 0 ? a.revenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '0'} <span style="color:var(--muted);font-weight:400;font-size:11px">28-day revenue</span></div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <div style="font-size:11px;color:var(--gold);font-weight:700">£${a.revenue > 0 ? a.revenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '0'} <span style="color:var(--muted);font-weight:400;font-size:10px">28d rev</span></div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">
             ${lastUpdatedBadge(a.lastUpdated)}
-            <span style="font-size:11px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:4px" onclick="openCadenceModal('${def.key}')" title="Edit upload cadence">${a.cadence || 'Set cadence'} <span style="opacity:0.5;font-size:10px">✏</span></span>
+            <span style="font-size:10px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:3px" onclick="openCadenceModal('${def.key}')" title="Edit upload cadence">${a.cadence || 'Set cadence'} <span style="opacity:0.5;font-size:9px">✏</span></span>
           </div>
         </div>
-        <button class="btn-secondary" style="font-size:11px;padding:6px 14px" onclick="showChannelHistory('${def.key}')">📈 History</button>
-        <button class="btn-primary" style="font-size:11px;padding:6px 14px" onclick="openAnalyticsModal('${def.key}')">📊 Analytics</button>
+        <div class="ch-analytics-footer-btns">
+          <button class="btn-secondary" onclick="navToHistory('${def.key}')">📈 History</button>
+          <button class="btn-primary" onclick="openAnalyticsModal('${def.key}')">📊 Analytics</button>
+        </div>
       </div>
       <div class="progress-wrap" style="margin-top:12px"><div class="progress-bar" style="width:${def.healthPct}%"></div></div>
       <div style="font-size:11px;color:var(--muted);margin-top:4px">${def.health}</div>
@@ -3406,11 +3422,15 @@ function syncHistRevenueToFinance(key) {
   if (typeof updateRevProgress    === 'function') updateRevProgress();
 }
 
-function showChannelHistory(key) {
-  histKey = key;
-  const sec = document.getElementById('ch-history-section');
-  if (sec) { sec.style.display = 'block'; setTimeout(() => sec.scrollIntoView({ behavior:'smooth', block:'start' }), 50); }
+function navToHistory(key) {
+  histKey = key || histKey || (CHANNEL_DEFS[0] && CHANNEL_DEFS[0].key);
+  const navEl = document.querySelector('[data-section="history"]');
+  if (navEl) nav(navEl);
   renderHistorySection();
+}
+
+function showChannelHistory(key) {
+  navToHistory(key);
 }
 
 function switchHistPeriod(p) {
@@ -3422,7 +3442,9 @@ function switchHistPeriod(p) {
 
 function renderHistorySection() {
   const sec = document.getElementById('ch-history-section');
-  if (!sec || !histKey) return;
+  if (!sec) return;
+  // Default to first channel if none selected
+  if (!histKey) histKey = CHANNEL_DEFS[0]?.key;
   const def  = CHANNEL_DEFS.find(d => d.key === histKey);
   const data = getHistData(histKey, histPeriod);
 
@@ -3456,13 +3478,6 @@ function renderHistorySection() {
     : `<span style="font-size:11px;color:#6b7280" id="hist-upload-status">No data yet — upload a CSV below</span>`;
 
   let html = `<div class="card" style="padding:20px;margin-bottom:16px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
-      <div>
-        <div style="font-size:18px;font-weight:700">📈 ${def.name} — Growth History</div>
-        <div style="font-size:12px;color:#6b7280;margin-top:3px">Upload a 365-day YouTube Studio CSV once — 28d and 90d views are derived automatically. Re-uploads merge new days only.</div>
-      </div>
-      <button class="btn-secondary" style="font-size:12px" onclick="document.getElementById('ch-history-section').style.display='none'">✕ Close</button>
-    </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">${tabs}</div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <div style="display:flex;gap:6px">${periodBtns}</div>
