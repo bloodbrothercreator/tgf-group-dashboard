@@ -476,11 +476,8 @@ input[type="month"].form-input { color-scheme: dark; }
   </a>
 
   <div class="nav-group-label">Growth</div>
-  <a class="nav-item" data-section="channels" onclick="nav(this)">
+  <a class="nav-item" data-section="channels" onclick="nav(this);renderHistorySection()">
     <span class="icon">▶</span> Channels
-  </a>
-  <a class="nav-item" data-section="history" onclick="nav(this);renderHistorySection()">
-    <span class="icon">📈</span> Growth History
   </a>
   <a class="nav-item" data-section="milestones" onclick="nav(this)">
     <span class="icon">◆</span> Milestones
@@ -887,15 +884,12 @@ input[type="month"].form-input { color-scheme: dark; }
   <div class="ch-analytics-grid" id="channels-grid">
     <!-- Populated by JS -->
   </div>
-</section>
 
-<!-- ══════════════ GROWTH HISTORY ══════════════ -->
-<section class="section" id="history">
-  <div class="page-header">
-    <h1>Growth History</h1>
-    <p>Upload a 365-day YouTube Studio CSV for each channel — 28d and 90d views derive automatically.</p>
+  <div style="margin-top:32px">
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">Growth History</h2>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Upload a 365-day YouTube Studio CSV for each channel — 28d and 90d views derive automatically.</p>
+    <div id="ch-history-section"></div>
   </div>
-  <div id="ch-history-section"></div>
 </section>
 
 <!-- ══════════════ MILESTONES ══════════════ -->
@@ -3424,9 +3418,13 @@ function syncHistRevenueToFinance(key) {
 
 function navToHistory(key) {
   histKey = key || histKey || (CHANNEL_DEFS[0] && CHANNEL_DEFS[0].key);
-  const navEl = document.querySelector('[data-section="history"]');
+  const navEl = document.querySelector('[data-section="channels"]');
   if (navEl) nav(navEl);
   renderHistorySection();
+  setTimeout(() => {
+    const sec = document.getElementById('ch-history-section');
+    if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 80);
 }
 
 function showChannelHistory(key) {
@@ -5046,6 +5044,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderOrgSection('central');
   renderRisks();
   renderChannelCards();
+  renderHistorySection();
   initPvaChart();
   renderDeals();
   restoreBriefing();
