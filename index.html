@@ -40,7 +40,7 @@ body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: v
 .sidebar-footer { margin-top: auto; padding: 16px 18px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); }
 
 /* ── MAIN ── */
-#main { margin-left: var(--sidebar-w); flex: 1; padding: 32px 36px; max-width: 1300px; }
+#main { margin-left: var(--sidebar-w); flex: 1; padding: 32px 36px; min-width: 0; }
 .section { display: none; }
 .section.active { display: block; }
 .page-header { margin-bottom: 24px; }
@@ -3532,12 +3532,7 @@ function renderHistorySection() {
       <div class="stat-sub">£${m.avgDailyRevenue.toFixed(2)} avg/day</div>
     </div>
   </div>
-  <div class="grid-4" style="margin-bottom:16px">
-    <div class="stat-card">
-      <div class="stat-label">Views Momentum</div>
-      <div class="stat-value" style="font-size:22px;color:${m.momentum>=0?'#22c55e':'#ef4444'}">${m.momentum>=0?'+':''}${m.momentum.toFixed(1)}%</div>
-      <div class="stat-sub">last 7d vs prev 7d</div>
-    </div>
+  <div class="grid-3" style="margin-bottom:16px">
     <div class="stat-card">
       <div class="stat-label">Best Subscriber Day</div>
       <div class="stat-value" style="font-size:20px;color:#22c55e">+${m.bestSubDay.toLocaleString()}</div>
@@ -3555,22 +3550,22 @@ function renderHistorySection() {
     </div>
   </div>
   <div class="card" style="margin-bottom:16px;padding:18px">
-    <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:.7px;text-transform:uppercase;margin-bottom:14px">Subscriber Growth</div>
-    <canvas id="chart-hist-subs" height="70"></canvas>
+    <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:.7px;text-transform:uppercase;margin-bottom:14px">Revenue (£)</div>
+    <canvas id="chart-hist-revenue" height="90"></canvas>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div class="card" style="padding:18px">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:.7px;text-transform:uppercase;margin-bottom:14px">Total Subscribers</div>
+      <canvas id="chart-hist-subs" height="110"></canvas>
+    </div>
     <div class="card" style="padding:18px">
       <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:.7px;text-transform:uppercase;margin-bottom:14px">Daily Views</div>
       <canvas id="chart-hist-views" height="110"></canvas>
     </div>
-    <div class="card" style="padding:18px">
-      <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:.7px;text-transform:uppercase;margin-bottom:14px">Revenue (£)</div>
-      <canvas id="chart-hist-revenue" height="110"></canvas>
-    </div>
   </div>`;
 
   sec.innerHTML = html;
-  setTimeout(() => drawHistCharts(data), 60);
+  setTimeout(() => drawHistCharts(data, histKey), 60);
 }
 
 function computeHistMetrics(data) {
@@ -3621,7 +3616,7 @@ function fillDateGaps(data) {
   return filled;
 }
 
-function drawHistCharts(data) {
+function drawHistCharts(data, key) {
   const filled  = fillDateGaps(data);
   const labels  = filled.map(r => r.date);
   const sparse  = filled.length > 90;
@@ -3655,14 +3650,23 @@ function drawHistCharts(data) {
     }
   });
 
-  // Subscriber growth line
-  const hasSubs = filled.some(r => r.subs !== null && r.subs > 0);
+  // Total subscriber count line — anchor to known current subs if available
+  const knownSubs = (key && channelAnalytics[key]?.subs) ? channelAnalytics[key].subs : 0;
+  const hasSubs = filled.some(r => r.subs !== null && r.subs !== 0);
   let subVals;
   if (hasSubs) {
     subVals = filled.map(r => r.subs);
   } else {
     let running = 0;
     subVals = filled.map(r => { running += (r.subsGained||0)-(r.subsLost||0); return running; });
+  }
+  // If we have a real subscriber count, shift the whole series so the last real value = knownSubs
+  if (knownSubs > 0) {
+    const lastReal = [...subVals].reverse().find(v => v !== null && v !== undefined);
+    if (lastReal !== undefined) {
+      const offset = knownSubs - lastReal;
+      subVals = subVals.map(v => v !== null && v !== undefined ? v + offset : null);
+    }
   }
   const subsEl = document.getElementById('chart-hist-subs');
   if (subsEl) {
