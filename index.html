@@ -404,14 +404,16 @@ input[type="month"].form-input { color-scheme: dark; }
 .cal-view-btn.active { background:var(--gold-glow); border-color:var(--gold); color:var(--gold); }
 .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); border-left:1px solid var(--border); border-top:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--surface); }
 .cal-dow { background:var(--surface2); color:var(--muted); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; padding:8px; text-align:center; border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
-.cal-day { min-height:96px; padding:6px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s; vertical-align:top; }
+.cal-day { min-height:120px; padding:6px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s; vertical-align:top; }
 .cal-day:hover { background:var(--surface2); }
 .cal-day.other-month { opacity:.3; }
 .cal-day.today { background:rgba(114,194,232,.07); }
 .cal-day-num { font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px; }
-.cal-day.today .cal-day-num { color:var(--gold); font-weight:800; }
-.cal-event-pill { font-size:10px; font-weight:600; border-radius:4px; padding:2px 6px; margin-bottom:2px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.5; display:block; }
+.cal-day.today .cal-day-num { background:var(--gold); color:#000; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; margin-bottom:6px; }
+.cal-event-pill { font-size:10px; font-weight:600; border-radius:4px; padding:3px 6px; margin-bottom:2px; cursor:pointer; overflow:hidden; line-height:1.4; display:block; white-space:nowrap; text-overflow:ellipsis; }
+.cal-event-pill.has-people { white-space:normal; }
 .cal-event-pill:hover { opacity:.8; }
+.cal-pill-people { font-size:9px; opacity:.8; font-weight:500; display:block; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .cal-more { font-size:10px; color:var(--muted); cursor:pointer; margin-top:1px; }
 .cal-week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
 .cal-week-col { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px; min-height:180px; }
@@ -4694,6 +4696,39 @@ let calEvents = (function(){
   return [];
 })();
 
+// ── UK Bank Holidays (England & Wales) 2024–2027 ──
+const UK_BANK_HOLIDAYS = [
+  {date:'2024-01-01',title:"New Year's Day"},{date:'2024-03-29',title:'Good Friday'},
+  {date:'2024-04-01',title:'Easter Monday'},{date:'2024-05-06',title:'Early May Bank Holiday'},
+  {date:'2024-05-27',title:'Spring Bank Holiday'},{date:'2024-08-26',title:'Summer Bank Holiday'},
+  {date:'2024-12-25',title:'Christmas Day'},{date:'2024-12-26',title:'Boxing Day'},
+  {date:'2025-01-01',title:"New Year's Day"},{date:'2025-04-18',title:'Good Friday'},
+  {date:'2025-04-21',title:'Easter Monday'},{date:'2025-05-05',title:'Early May Bank Holiday'},
+  {date:'2025-05-26',title:'Spring Bank Holiday'},{date:'2025-08-25',title:'Summer Bank Holiday'},
+  {date:'2025-12-25',title:'Christmas Day'},{date:'2025-12-26',title:'Boxing Day'},
+  {date:'2026-01-01',title:"New Year's Day"},{date:'2026-04-03',title:'Good Friday'},
+  {date:'2026-04-06',title:'Easter Monday'},{date:'2026-05-04',title:'Early May Bank Holiday'},
+  {date:'2026-05-25',title:'Spring Bank Holiday'},{date:'2026-08-31',title:'Summer Bank Holiday'},
+  {date:'2026-12-25',title:'Christmas Day'},{date:'2026-12-28',title:'Boxing Day'},
+  {date:'2027-01-01',title:"New Year's Day"},{date:'2027-03-26',title:'Good Friday'},
+  {date:'2027-03-29',title:'Easter Monday'},{date:'2027-05-03',title:'Early May Bank Holiday'},
+  {date:'2027-05-31',title:'Spring Bank Holiday'},{date:'2027-08-30',title:'Summer Bank Holiday'},
+  {date:'2027-12-27',title:'Christmas Day (sub)'},{date:'2027-12-28',title:'Boxing Day (sub)'},
+];
+(function seedBankHolidays() {
+  const existing = new Set(calEvents.filter(e=>e.bankHoliday).map(e=>e.date));
+  let added = false;
+  UK_BANK_HOLIDAYS.forEach(h => {
+    if (!existing.has(h.date)) {
+      calEvents.push({ id:'bh_'+h.date, date:h.date, title:h.title, type:'holiday',
+        bankHoliday:true, people:[], channel:'', endDate:'', startTime:'', endTime:'',
+        description:'UK Bank Holiday (England & Wales)' });
+      added = true;
+    }
+  });
+  if (added) localStorage.setItem('tgf4_calEvents', JSON.stringify(calEvents));
+})();
+
 let calView = 'monthly';
 let calCursor = new Date(); calCursor.setDate(1); calCursor.setHours(0,0,0,0);
 let calPersonFilter = '';
@@ -4852,10 +4887,14 @@ function renderCalDayCell(date,otherMonth,today,filtered) {
   events.slice(0,MAX).forEach(ev=>{
     const color=getCalTypeColor(ev.type);
     const textColor=isLightColor(color)?'#111':'#fff';
-    const channel=ev.channel?`<span style="font-size:8px;background:rgba(255,255,255,.2);border-radius:3px;padding:1px 4px;margin-left:3px">${ev.channel}</span>`:'';
     const multiDay=ev.endDate&&ev.endDate>ev.date;
-    const pillLabel=(ev.title||ev.type)+(multiDay?' ⟶':'');
-    evHtml+=`<span class="cal-event-pill" style="background:${color};color:${textColor}${multiDay?';border-right:2px dashed rgba(255,255,255,.4)':''}" onclick="event.stopPropagation();editCalEvent('${ev.id}')" title="${(ev.title||ev.type).replace(/"/g,'&quot;')}${multiDay?' ('+ev.date+' → '+ev.endDate+')':''}">${pillLabel}${channel}</span>`;
+    const timeStr=ev.startTime?`<span style="opacity:.8;margin-right:3px">${ev.startTime}</span>`:'';
+    const pillLabel=(ev.title||ev.type)+(multiDay?' →':'');
+    const pplStr=ev.people&&ev.people.length
+      ? ev.people.slice(0,3).map(p=>p.split(' ')[0]).join(', ')+(ev.people.length>3?` +${ev.people.length-3}`:'')
+      : '';
+    const hasPpl=pplStr.length>0;
+    evHtml+=`<span class="cal-event-pill${hasPpl?' has-people':''}" style="background:${color};color:${textColor}${multiDay?';border-right:2px dashed rgba(255,255,255,.4)':''}" onclick="event.stopPropagation();editCalEvent('${ev.id}')" title="${(ev.title||ev.type).replace(/"/g,'&quot;')}${pplStr?' · '+pplStr:''}">${timeStr}${pillLabel}${hasPpl?`<span class="cal-pill-people">${pplStr}</span>`:''}</span>`;
   });
   if (events.length>MAX) evHtml+=`<span style="font-size:10px;color:var(--muted);padding:1px 4px">+${events.length-MAX} more</span>`;
   return `<div class="${cls}" onclick="openAddCalEventModal('${ds}')"><div class="cal-day-num">${date.getDate()}</div>${evHtml}</div>`;
@@ -4867,27 +4906,76 @@ function renderWeeklyCalendar() {
   const filtered=getFilteredEvents();
   const today=calDateStr(new Date());
   const ws=getWeekStart(calCursor);
-  let html='<div class="cal-grid">';
-  for (let i=0;i<7;i++) {
-    const d=new Date(ws); d.setDate(d.getDate()+i);
-    const ds=calDateStr(d), isToday=ds===today;
-    html+=`<div style="padding:10px 6px;font-size:11px;font-weight:700;color:${isToday?'var(--gold)':'var(--muted)'};letter-spacing:.5px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface2);text-align:center">${CAL_DAYS_S[d.getDay()]}<br><span style="font-size:16px;color:${isToday?'var(--gold)':'var(--text)'}">${d.getDate()}</span></div>`;
-  }
-  for (let i=0;i<7;i++) {
-    const d=new Date(ws); d.setDate(d.getDate()+i);
-    const ds=calDateStr(d), isToday=ds===today;
-    const events=getEventsForDay(ds,filtered);
-    let evHtml='';
-    events.forEach(ev=>{
+  const START_H=7, END_H=22, HOUR_PX=56;
+  const days=Array.from({length:7},(_,i)=>{ const d=new Date(ws); d.setDate(d.getDate()+i); return {d,ds:calDateStr(d),isToday:calDateStr(d)===today}; });
+
+  // Header
+  let html=`<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface)">`;
+  html+=`<div style="display:grid;grid-template-columns:52px repeat(7,1fr);background:var(--surface2);border-bottom:1px solid var(--border)">`;
+  html+=`<div></div>`;
+  days.forEach(({d,isToday})=>{
+    const todayBg=isToday?`background:var(--gold);color:#000;border-radius:50%;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center`:'';
+    html+=`<div style="text-align:center;padding:10px 4px;border-left:1px solid var(--border)"><div style="font-size:10px;font-weight:700;letter-spacing:.5px;color:${isToday?'var(--gold)':'var(--muted)'}">${CAL_DAYS_S[d.getDay()]}</div><div style="font-size:18px;font-weight:700;margin-top:3px"><span style="${todayBg}">${d.getDate()}</span></div></div>`;
+  });
+  html+=`</div>`;
+
+  // All-day row
+  const allDayByDay=days.map(({ds})=>getEventsForDay(ds,filtered).filter(e=>!e.startTime));
+  html+=`<div style="display:grid;grid-template-columns:52px repeat(7,1fr);border-bottom:2px solid var(--border);min-height:36px">`;
+  html+=`<div style="font-size:9px;color:var(--muted);text-align:right;padding:6px 6px 0;letter-spacing:.3px;text-transform:uppercase;border-right:1px solid var(--border)">all‑day</div>`;
+  days.forEach(({ds,isToday},i)=>{
+    const evHtml=allDayByDay[i].map(ev=>{
       const color=getCalTypeColor(ev.type);
-      const channel=ev.channel?`<span style="font-size:8px;background:rgba(255,255,255,.18);border-radius:3px;padding:1px 4px;margin-left:3px">${ev.channel}</span>`:'';
-      const ppl=ev.people&&ev.people.length?`<div style="font-size:9px;color:var(--muted);margin-top:3px">${ev.people.slice(0,2).join(', ')}${ev.people.length>2?` +${ev.people.length-2}`:''}</div>`:'';
-      evHtml+=`<div class="cal-day-card" style="border-color:${color}" onclick="editCalEvent('${ev.id}')">
-        <div style="font-size:11px;font-weight:700;color:${color}">${ev.title||ev.type}${channel}</div>${ppl}</div>`;
-    });
-    html+=`<div class="cal-day" style="min-height:160px;${isToday?'background:rgba(114,194,232,.05)':''}" onclick="openAddCalEventModal('${ds}')">${evHtml}</div>`;
+      const textColor=isLightColor(color)?'#111':'#fff';
+      const ppl=ev.people&&ev.people.length?ev.people.slice(0,2).map(p=>p.split(' ')[0]).join(', '):'';
+      const label=(ev.title||ev.type)+(ppl?` · ${ppl}`:'');
+      const multiDay=ev.endDate&&ev.endDate>ev.date;
+      return `<span class="cal-event-pill" style="background:${color};color:${textColor};display:block;margin-bottom:2px${multiDay?';border-right:2px dashed rgba(255,255,255,.4)':''}" onclick="event.stopPropagation();editCalEvent('${ev.id}')">${label}</span>`;
+    }).join('');
+    html+=`<div style="padding:4px;border-left:1px solid var(--border)${isToday?';background:rgba(114,194,232,.04)':''}" onclick="openAddCalEventModal('${ds}')">${evHtml}</div>`;
+  });
+  html+=`</div>`;
+
+  // Time grid
+  html+=`<div style="display:flex;overflow-y:auto;max-height:580px">`;
+  // Time axis column
+  html+=`<div style="flex-shrink:0;width:52px;border-right:1px solid var(--border)">`;
+  for(let h=START_H;h<=END_H;h++){
+    html+=`<div style="height:${HOUR_PX}px;padding:4px 6px 0 0;font-size:9px;color:var(--muted);text-align:right;border-bottom:1px solid rgba(255,255,255,.04)">${h.toString().padStart(2,'0')}:00</div>`;
   }
-  html+='</div>';
+  html+=`</div>`;
+
+  // Day columns
+  days.forEach(({d,ds,isToday})=>{
+    const timedEvs=getEventsForDay(ds,filtered).filter(e=>e.startTime);
+    html+=`<div style="flex:1;position:relative;border-left:1px solid var(--border)${isToday?';background:rgba(114,194,232,.03)':''}">`;
+    // Grid lines
+    for(let h=START_H;h<=END_H;h++){
+      const half=h+0.5;
+      html+=`<div style="position:absolute;top:${(h-START_H)*HOUR_PX}px;left:0;right:0;height:${HOUR_PX}px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer" onclick="openAddCalEventModal('${ds}')"></div>`;
+      html+=`<div style="position:absolute;top:${(half-START_H)*HOUR_PX}px;left:0;right:0;height:0;border-top:1px dashed rgba(255,255,255,.03)"></div>`;
+    }
+    // Timed events
+    timedEvs.forEach(ev=>{
+      const [sh,sm]=(ev.startTime||'08:00').split(':').map(Number);
+      const [eh,em]=(ev.endTime||ev.startTime||'09:00').split(':').map(Number);
+      const startMin=(sh-START_H)*60+(sm||0);
+      const endMin=ev.endTime?(eh-START_H)*60+(em||0):startMin+60;
+      const top=Math.max(0,startMin/60*HOUR_PX);
+      const height=Math.max(24,(endMin-startMin)/60*HOUR_PX);
+      const color=getCalTypeColor(ev.type);
+      const textColor=isLightColor(color)?'#111':'#fff';
+      const ppl=ev.people&&ev.people.length?ev.people.slice(0,2).map(p=>p.split(' ')[0]).join(', '):'';
+      const timeLabel=ev.startTime+(ev.endTime?' – '+ev.endTime:'');
+      html+=`<div onclick="editCalEvent('${ev.id}')" style="position:absolute;top:${top}px;left:2px;right:2px;height:${height}px;background:${color};color:${textColor};border-radius:4px;padding:3px 6px;font-size:10px;font-weight:600;cursor:pointer;overflow:hidden;z-index:2;box-shadow:0 2px 4px rgba(0,0,0,.3)">
+        <div style="font-size:9px;opacity:.85">${timeLabel}</div>
+        <div style="font-weight:700;margin-top:1px">${ev.title||ev.type}</div>
+        ${ppl?`<div style="font-size:9px;opacity:.75;margin-top:1px">${ppl}</div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  html+=`</div></div>`;
   body.innerHTML=html;
 }
 
@@ -4910,7 +4998,7 @@ function renderDailyCalendar() {
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
             <div style="font-size:16px;font-weight:700">${ev.title||typLabel}${channel}</div>
-            <div style="font-size:11px;font-weight:600;color:${color};margin-top:3px;text-transform:uppercase;letter-spacing:.5px">${typLabel}${ev.recurringGroupId?'  ↻ Recurring':''}${ev.endDate&&ev.endDate>ev.date?`  · ${ev.date} → ${ev.endDate}`:''}</div>
+            <div style="font-size:11px;font-weight:600;color:${color};margin-top:3px;text-transform:uppercase;letter-spacing:.5px">${typLabel}${ev.recurringGroupId?'  ↻ Recurring':''}${ev.startTime?`  · ${ev.startTime}${ev.endTime?' – '+ev.endTime:''}`:ev.endDate&&ev.endDate>ev.date?`  · ${ev.date} → ${ev.endDate}`:''}</div>
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn-secondary" style="font-size:11px;padding:5px 10px" onclick="editCalEvent('${ev.id}')">Edit</button>
@@ -5008,6 +5096,16 @@ function calEventFormHtml(ev, defaultDate) {
         <input class="form-input" id="ce-end-date" type="date" value="${ev&&ev.endDate?ev.endDate:''}" min="${ev?ev.date:defaultDate||''}">
       </div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <label class="form-label">Start Time <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <input class="form-input" id="ce-start-time" type="time" value="${ev&&ev.startTime?ev.startTime:''}">
+      </div>
+      <div>
+        <label class="form-label">End Time <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <input class="form-input" id="ce-end-time" type="time" value="${ev&&ev.endTime?ev.endTime:''}">
+      </div>
+    </div>
     <div>
       <label class="form-label">People</label>
       <div class="tag-wrap" id="tag-wrap" onclick="document.getElementById('tag-input')&&document.getElementById('tag-input').focus()"></div>
@@ -5055,23 +5153,25 @@ function editCalEvent(id) {
 }
 
 function saveCalEventFromModal(existingId, fallbackDate) {
-  const type =(document.getElementById('ce-type')||{}).value||'meeting';
-  const title=(document.getElementById('ce-title').value||'').trim();
-  const date =(document.getElementById('ce-date').value)||fallbackDate;
-  const rawEnd=(document.getElementById('ce-end-date')||{}).value||'';
-  const endDate=rawEnd&&rawEnd>date?rawEnd:(rawEnd===date?'':rawEnd&&rawEnd<date?date:'');
-  const desc =(document.getElementById('ce-desc').value||'').trim();
-  const chan  =type==='shoot'?(document.getElementById('ce-channel').value||''):'';
-  const recur=(document.getElementById('ce-recurring')||{}).value||'none';
+  const type      =(document.getElementById('ce-type')||{}).value||'meeting';
+  const title     =(document.getElementById('ce-title').value||'').trim();
+  const date      =(document.getElementById('ce-date').value)||fallbackDate;
+  const rawEnd    =(document.getElementById('ce-end-date')||{}).value||'';
+  const endDate   =rawEnd&&rawEnd>date?rawEnd:(rawEnd===date?'':rawEnd&&rawEnd<date?date:'');
+  const startTime =(document.getElementById('ce-start-time')||{}).value||'';
+  const endTime   =(document.getElementById('ce-end-time')||{}).value||'';
+  const desc      =(document.getElementById('ce-desc').value||'').trim();
+  const chan      =type==='shoot'?(document.getElementById('ce-channel').value||''):'';
+  const recur     =(document.getElementById('ce-recurring')||{}).value||'none';
   if (!date) { alert('Please pick a date.'); return; }
   const people=[..._tagPeople];
 
   if (existingId) {
     const idx=calEvents.findIndex(e=>e.id===existingId);
-    if (idx>-1) calEvents[idx]={...calEvents[idx], type, title, date, endDate:endDate||'', description:desc, channel:chan, people};
+    if (idx>-1) calEvents[idx]={...calEvents[idx], type, title, date, endDate:endDate||'', startTime, endTime, description:desc, channel:chan, people};
   } else {
     if (recur==='none') {
-      calEvents.push({ id:'ce_'+Date.now(), type, title, date, endDate:endDate||'', description:desc, channel:chan, people });
+      calEvents.push({ id:'ce_'+Date.now(), type, title, date, endDate:endDate||'', startTime, endTime, description:desc, channel:chan, people });
     } else {
       generateRecurringInstances(type,title,date,desc,chan,people,recur);
     }
