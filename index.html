@@ -3260,14 +3260,34 @@ function deleteDeal(id) {
 // ══════════════════════════════════════════
 
 let histKey    = null;
-let histPeriod = '90';
+let histPeriod = '28';
 let _histCharts = {};
 
-function getHistData(key, period) {
-  try { const s = localStorage.getItem(`tgf4_hist_${key}_${period}`); return s ? JSON.parse(s) : null; } catch(e) { return null; }
+function loadHistMaster(key) {
+  // Try new master key first, fall back to old 365d key for backward compat
+  for (const k of [`tgf4_hist_${key}_master`, `tgf4_hist_${key}_365d`, `tgf4_hist_${key}_90d`]) {
+    try { const s = localStorage.getItem(k); if (s) return JSON.parse(s); } catch(e) {}
+  }
+  return null;
 }
-function saveHistData(key, period, rows) {
-  localStorage.setItem(`tgf4_hist_${key}_${period}`, JSON.stringify(rows));
+function getHistData(key, period) {
+  const master = loadHistMaster(key);
+  if (!master || !master.length) return null;
+  const days = period === '28' ? 28 : period === '90' ? 90 : null;
+  if (!days) return master;  // 365 = all
+  // Return last N entries (already sorted ascending by date)
+  return master.length > days ? master.slice(master.length - days) : master;
+}
+function saveHistData(key, newRows) {
+  // Merge new rows into master — new rows win on duplicate dates, old rows preserved otherwise
+  const master = loadHistMaster(key) || [];
+  const byDate = {};
+  master.forEach(r => { byDate[r.date] = r; });
+  newRows.forEach(r => { byDate[r.date] = r; });
+  const merged = Object.values(byDate).sort((a,b) => new Date(a.date) - new Date(b.date));
+  localStorage.setItem(`tgf4_hist_${key}_master`, JSON.stringify(merged));
+  localStorage.setItem(`tgf4_hist_${key}_lastUpdate`, new Date().toISOString());
+  return merged;
 }
 
 function showChannelHistory(key) {
@@ -3298,20 +3318,32 @@ function renderHistorySection() {
     `<span style="cursor:pointer;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;${d.key===histKey?'background:rgba(114,194,232,.12);color:#72C2E8;border:1px solid #4A9EC7':'color:#6b7280;border:1px solid #252a38'}" onclick="showChannelHistory('${d.key}')">${d.name}</span>`
   ).join('');
 
-  const periods = [['90','90 Days'],['365','365 Days']];
+  const periods = [['28','28 Days'],['90','90 Days'],['365','365 Days']];
   const periodBtns = periods.map(([p,l]) =>
     `<button class="cal-view-btn hist-period-btn${histPeriod===p?' active':''}" id="hist-p-${p}" onclick="switchHistPeriod('${p}')">${l}</button>`
   ).join('');
 
-  const dataStatus = data
-    ? `<span style="font-size:11px;color:#22c55e">✓ ${data.length} days loaded</span>`
-    : `<span style="font-size:11px;color:#6b7280">No data — upload a CSV</span>`;
+  // Master dataset info
+  const master = loadHistMaster(histKey);
+  const masterLen = master ? master.length : 0;
+  const lastUpdate = localStorage.getItem(`tgf4_hist_${histKey}_lastUpdate`);
+  let dataRange = '';
+  if (master && master.length >= 2) {
+    const first = master[0].date, last = master[master.length-1].date;
+    const fmtD = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    dataRange = `${fmtD(first)} – ${fmtD(last)} (${masterLen} days)`;
+  }
+  const lastUpdateStr = lastUpdate ? `Updated ${new Date(lastUpdate).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}` : '';
+
+  const dataStatus = masterLen > 0
+    ? `<span style="font-size:11px;color:#22c55e" id="hist-upload-status">✓ ${dataRange}${lastUpdateStr?' · '+lastUpdateStr:''}</span>`
+    : `<span style="font-size:11px;color:#6b7280" id="hist-upload-status">No data yet — upload a CSV below</span>`;
 
   let html = `<div class="card" style="padding:20px;margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
       <div>
         <div style="font-size:18px;font-weight:700">📈 ${def.name} — Growth History</div>
-        <div style="font-size:12px;color:#6b7280;margin-top:3px">Upload a YouTube Studio Channel Overview CSV to populate charts</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:3px">Upload a 365-day YouTube Studio CSV once — 28d and 90d views are derived automatically. Re-uploads merge new days only.</div>
       </div>
       <button class="btn-secondary" style="font-size:12px" onclick="document.getElementById('ch-history-section').style.display='none'">✕ Close</button>
     </div>
@@ -3319,19 +3351,23 @@ function renderHistorySection() {
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <div style="display:flex;gap:6px">${periodBtns}</div>
       <label class="btn-secondary" style="cursor:pointer;font-size:12px;padding:6px 14px;display:inline-block">
-        📁 Upload ${histPeriod}-day CSV
-        <input type="file" id="hist-csv-input" accept=".csv" style="display:none" onchange="handleHistoryCsv('${histKey}','${histPeriod}')">
+        📁 Upload CSV
+        <input type="file" id="hist-csv-input" accept=".csv" style="display:none" onchange="handleHistoryCsv('${histKey}')">
       </label>
       ${dataStatus}
     </div>
   </div>`;
 
   if (!data || !data.length) {
+    const periodLabel = histPeriod === '28' ? '28-day' : histPeriod === '90' ? '90-day' : '365-day';
     html += `<div class="card" style="text-align:center;padding:56px 0;color:#6b7280">
       <div style="font-size:36px;margin-bottom:12px">📊</div>
-      <div style="font-size:15px;font-weight:600;color:#e8eaf0;margin-bottom:8px">No historical data for ${def.name} (${histPeriod}d)</div>
-      <div style="font-size:12px;margin-bottom:4px">In YouTube Studio → Analytics → Advanced Mode → Export (top right)</div>
-      <div style="font-size:12px">Select the ${histPeriod}-day range, export as CSV, and upload above.</div>
+      <div style="font-size:15px;font-weight:600;color:#e8eaf0;margin-bottom:8px">No ${periodLabel} data for ${def.name}</div>
+      ${masterLen > 0
+        ? `<div style="font-size:12px">Your data covers ${masterLen} days — try a shorter period or upload a longer CSV.</div>`
+        : `<div style="font-size:12px;margin-bottom:4px">In YouTube Studio → Analytics → Advanced Mode → set range to 365 days → Export (top right)</div>
+           <div style="font-size:12px">Upload once and 28d, 90d, and 365d views all populate automatically.</div>`
+      }
     </div>`;
     sec.innerHTML = html; return;
   }
@@ -3344,7 +3380,7 @@ function renderHistorySection() {
     <div class="stat-card">
       <div class="stat-label">Subscriber Change</div>
       <div class="stat-value" style="color:${dColor};font-size:24px">${dArrow} ${Math.abs(m.subDelta).toLocaleString()}</div>
-      <div class="stat-sub">${m.subDeltaPct >= 0?'+':''}${m.subDeltaPct.toFixed(2)}% over ${histPeriod} days</div>
+      <div class="stat-sub">${m.subDeltaPct >= 0?'+':''}${m.subDeltaPct.toFixed(2)}% over ${data.length} days</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Total Views</div>
@@ -3357,7 +3393,7 @@ function renderHistorySection() {
       <div class="stat-sub">${m.peakDate}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Revenue (${histPeriod}d)</div>
+      <div class="stat-label">Revenue (${data.length}d)</div>
       <div class="stat-value gold">£${m.totalRevenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
       <div class="stat-sub">£${m.avgDailyRevenue.toFixed(2)} avg/day</div>
     </div>
@@ -3480,18 +3516,26 @@ function drawHistCharts(data) {
   }
 }
 
-function handleHistoryCsv(key, period) {
+function handleHistoryCsv(key) {
   const input = document.getElementById('hist-csv-input');
   if (!input || !input.files[0]) return;
   const reader = new FileReader();
   reader.onload = e => {
     try {
       const rows = parseHistoryCsv(e.target.result);
-      if (rows.length < 2) throw new Error('Only ' + rows.length + ' data row(s) found');
-      saveHistData(key, period, rows);
+      if (rows.length < 1) throw new Error('No data rows found in this CSV');
+      const master = saveHistData(key, rows);
+      const existingDays  = (loadHistMaster(key) || []).length;
+      const newDays = rows.length;
       renderHistorySection();
+      // Brief feedback
+      const statusEl = document.getElementById('hist-upload-status');
+      if (statusEl) {
+        statusEl.textContent = `✓ Merged ${newDays} rows — ${master.length} days total in history`;
+        statusEl.style.color = '#22c55e';
+      }
     } catch(err) {
-      alert('Could not parse CSV: ' + err.message + '\n\nMake sure this is a YouTube Studio Channel Overview CSV export (Advanced Mode → Export button).');
+      alert('Could not parse CSV: ' + err.message + '\n\nSupported formats: YouTube Studio Channel Overview CSV (Analytics → Advanced Mode → Export) or Content tab CSV.');
     }
   };
   reader.readAsText(input.files[0]);
@@ -3826,7 +3870,7 @@ async function syncYouTubeHistory(key, channelId) {
       }).filter(r => r.date);
 
       if (parsed.length > 0) {
-        localStorage.setItem(`tgf4_hist_${key}_${period}`, JSON.stringify(parsed));
+        saveHistData(key, parsed);
       }
     } catch(e) { console.warn('History sync error for', key, period, e); }
   }
