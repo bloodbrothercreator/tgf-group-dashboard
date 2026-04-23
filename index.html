@@ -2765,23 +2765,32 @@ function renderChannelCards() {
     const h   = deriveStatsFromHistory(def.key); // null if no CSV uploaded
 
     // Prefer history-derived values; fall back to manually-entered
-    const views28      = h ? h.views28      : a.views28;
-    const watchTimeHrs = h ? h.watchTimeHrs : a.watchTimeHrs;
-    const revenue      = h ? h.revenue      : a.revenue;
-    const subsGained   = h ? h.subsGained   : a.subsGained;
-    const impressions  = h ? h.impressions  : a.impressions;
-    const ctr          = h ? h.ctr          : a.ctr;
-    const avgViewDur   = h ? h.avgViewDur   : a.avgViewDur;
+    const views28         = h ? h.views28         : a.views28;
+    const revenue         = h ? h.revenue         : a.revenue;
+    const netSubChange    = h ? h.netSubChange     : null;
+    const avgDailySubGain = h ? h.avgDailySubGain  : null;
+    const peakDayViews    = h ? h.peakDayViews     : null;
+    const peakDayDate     = h ? h.peakDayDate      : '';
+    const rpm             = h ? h.rpm              : (a.views28 > 0 && a.revenue > 0 ? a.revenue / (a.views28 / 1000) : 0);
 
-    // Subscribers: use formatted string from channelAnalytics (manually set or from analytics modal)
-    // but if history has an absolute count and no manual value, format it
+    // Subscribers: use formatted string from channelAnalytics; fall back to formatting raw history subs
     let subsDisplay = a.subs || '—';
     if ((!subsDisplay || subsDisplay === '—') && h && h.histSubs) {
       subsDisplay = fmtSubsDisplay(h.histSubs);
     }
 
-    const wtDisplay = watchTimeHrs >= 1000 ? fmtNum(Math.round(watchTimeHrs))+'h' : watchTimeHrs > 0 ? Math.round(watchTimeHrs)+'h' : '—';
-    const rpm = views28 > 0 && revenue > 0 ? (revenue / (views28 / 1000)).toFixed(2) : '—';
+    // Net sub change display (green positive, red negative)
+    let subChangeDisplay = '—';
+    let subChangeColor = 'var(--text)';
+    if (netSubChange !== null) {
+      subChangeDisplay = (netSubChange >= 0 ? '+' : '') + fmtNum(netSubChange);
+      subChangeColor = netSubChange > 0 ? 'var(--green)' : netSubChange < 0 ? 'var(--red)' : 'var(--muted)';
+    }
+    const avgDailySubDisplay = avgDailySubGain !== null ? (avgDailySubGain >= 0 ? '+' : '') + avgDailySubGain.toFixed(0) + '/day' : '—';
+    const peakDisplay   = peakDayViews !== null && peakDayViews > 0 ? fmtNum(peakDayViews) : '—';
+    const peakTitle     = peakDayDate ? ` title="Best day: ${peakDayDate}"` : '';
+    const rpmDisplay    = rpm > 0 ? '£' + rpm.toFixed(2) : '—';
+
     const srcBadge = h ? `<span style="font-size:9px;background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);border-radius:3px;padding:1px 5px;font-weight:600" title="Stats derived from history CSV — last entry ${h.dataEnd}">CSV</span>` : '';
     const lastUpdate = h ? h.dataEnd : a.lastUpdated;
 
@@ -2800,10 +2809,10 @@ function renderChannelCards() {
       <div class="ch-metrics-row">
         <div class="ch-metric"><div class="m-label">Subscribers</div><div class="m-val">${subsDisplay}</div></div>
         <div class="ch-metric"><div class="m-label">28-Day Views</div><div class="m-val">${fmtNum(views28)}</div></div>
-        <div class="ch-metric"><div class="m-label">Watch Time</div><div class="m-val">${wtDisplay}</div></div>
-        <div class="ch-metric"><div class="m-label">Avg View Dur</div><div class="m-val">${fmtDur(avgViewDur)}</div></div>
-        <div class="ch-metric"><div class="m-label">Impressions</div><div class="m-val">${fmtNum(impressions)}</div></div>
-        <div class="ch-metric"><div class="m-label">CTR</div><div class="m-val">${ctr > 0 ? ctr.toFixed(2)+'%' : '—'}</div></div>
+        <div class="ch-metric"><div class="m-label">Sub Change</div><div class="m-val" style="color:${subChangeColor}">${subChangeDisplay}</div></div>
+        <div class="ch-metric"><div class="m-label">Avg Daily Subs</div><div class="m-val">${avgDailySubDisplay}</div></div>
+        <div class="ch-metric"${peakTitle}><div class="m-label">Peak Day</div><div class="m-val">${peakDisplay}</div></div>
+        <div class="ch-metric"><div class="m-label">RPM</div><div class="m-val">${rpmDisplay}</div></div>
       </div>
       <div class="ch-analytics-footer">
         <div>
@@ -3421,15 +3430,26 @@ function deriveStatsFromHistory(key) {
   const watchTimeHrs = win.reduce((s,r) => s + (r.watchTimeHrs || 0), 0);
   const revenue      = win.reduce((s,r) => s + (r.revenue || 0), 0);
   const subsGained   = win.reduce((s,r) => s + (r.subsGained || 0), 0);
+  const subsLost     = win.reduce((s,r) => s + (r.subsLost  || 0), 0);
+  const netSubChange = subsGained - subsLost;
+  const avgDailySubGain = win.length > 0 ? subsGained / win.length : 0;
   const impressions  = win.reduce((s,r) => s + (r.impressions || 0), 0);
   // Impressions-weighted CTR average
   const ctrSum = win.reduce((s,r) => s + (r.ctr || 0) * (r.impressions || 0), 0);
   const ctr = impressions > 0 ? ctrSum / impressions : win.reduce((s,r) => s + (r.ctr||0), 0) / win.filter(r=>r.ctr>0).length || 0;
   const avgViewDur = views28 > 0 && watchTimeHrs > 0 ? (watchTimeHrs * 3600 / views28) : 0;
+  // Peak single day views in the window
+  const peakRow = win.reduce((best,r) => (r.views||0) > (best.views||0) ? r : best, win[0]);
+  const peakDayViews = peakRow.views || 0;
+  const peakDayDate  = peakRow.date || '';
+  // RPM = revenue per 1,000 views
+  const rpm = views28 > 0 && revenue > 0 ? (revenue / (views28 / 1000)) : 0;
   // Most recent non-null absolute subscriber count from history
   const lastSubRow = [...data].reverse().find(r => r.subs != null && r.subs > 0);
   const histSubs = lastSubRow ? lastSubRow.subs : null;
-  return { views28, watchTimeHrs, revenue, subsGained, impressions, ctr, avgViewDur, histSubs, dataEnd: last };
+  return { views28, watchTimeHrs, revenue, subsGained, subsLost, netSubChange,
+           avgDailySubGain, impressions, ctr, avgViewDur, rpm,
+           peakDayViews, peakDayDate, histSubs, dataEnd: last };
 }
 
 function getHistData(key, period) {
