@@ -447,6 +447,10 @@ input[type="month"].form-input { color-scheme: dark; }
   <div class="sidebar-footer">
     <span class="version">v4.0</span> · Apr 2026<br />
     TGF Group — Managed by BBM
+    <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
+      <span id="sync-dot" style="font-size:9px;color:var(--amber)">●</span>
+      <span id="sync-label" style="font-size:10px;color:var(--muted)">Connecting…</span>
+    </div>
   </div>
 </nav>
 
@@ -968,6 +972,134 @@ input[type="month"].form-input { color-scheme: dark; }
 </div>
 
 <script>
+// ══════════════════════════════════════════
+//  SUPABASE SYNC LAYER
+// ══════════════════════════════════════════
+const SB_URL = 'https://bllkvatwlnnizzgsorux.supabase.co';
+const SB_KEY = 'sb_publishable_-7G8SJ4xYEIgvftU_5oiGQ_3ieyaUGa';
+const SB_HEADERS = {
+  'apikey': SB_KEY,
+  'Authorization': 'Bearer ' + SB_KEY,
+  'Content-Type': 'application/json'
+};
+
+// Keys that map to a single Supabase row each
+const SB_STRUCTURED = new Set([
+  'tgf4_earnings','tgf4_spendings','tgf4_monthlyTargets',
+  'tgf4_hires','tgf4_milestones','tgf4_risks','tgf4_deals',
+  'tgf4_org','tgf4_channelAnalytics','tgf4_revTypes',
+  'tgf4_spendTypes','tgf4_staff'
+]);
+
+async function sbGet(key) {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/tgf_data?key=eq.${key}&select=value`, { headers: SB_HEADERS });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return rows.length > 0 ? rows[0].value : null;
+  } catch(e) { return null; }
+}
+
+async function sbSet(key, value) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/tgf_data`, {
+      method: 'POST',
+      headers: { ...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ key, value, updated_at: new Date().toISOString() })
+    });
+    setSyncStatus('ok', 'Saved ✓');
+  } catch(e) {
+    setSyncStatus('offline', 'Offline');
+  }
+}
+
+// Intercept localStorage.setItem so every save auto-syncs to Supabase
+const _origLsSet = Storage.prototype.setItem;
+Storage.prototype.setItem = function(key, value) {
+  _origLsSet.call(this, key, value);
+  if (this !== localStorage || !key.startsWith('tgf4_')) return;
+  if (SB_STRUCTURED.has(key)) {
+    try { sbSet(key.replace('tgf4_',''), JSON.parse(value)); } catch(e) {}
+  } else {
+    debounceSaveEdits();
+  }
+  setSyncStatus('syncing', 'Saving…');
+};
+
+let _editsTimer = null;
+function debounceSaveEdits() {
+  clearTimeout(_editsTimer);
+  _editsTimer = setTimeout(() => {
+    const edits = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('tgf4_') && !SB_STRUCTURED.has(k) && k !== 'tgf4_briefing') {
+        edits[k] = localStorage.getItem(k);
+      }
+    }
+    sbSet('edits', edits);
+  }, 1500);
+}
+
+function setSyncStatus(state, label) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  if (!dot || !lbl) return;
+  const colors = { ok:'var(--green)', syncing:'var(--amber)', offline:'var(--red)' };
+  dot.style.color = colors[state] || 'var(--muted)';
+  lbl.textContent = label;
+}
+
+async function sbLoadAll() {
+  setSyncStatus('syncing', 'Syncing…');
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/tgf_data?select=key,value`, { headers: SB_HEADERS });
+    if (!res.ok) throw new Error('Fetch error ' + res.status);
+    const rows = await res.json();
+    const sbMap = {};
+    rows.forEach(r => { sbMap[r.key] = r.value; });
+
+    // Helper: apply Supabase value to localStorage + JS variable
+    // If key not in Supabase, push current localStorage value up
+    function applyOrPush(sbKey, lsKey, assignFn) {
+      if (sbMap[sbKey] !== undefined) {
+        _origLsSet.call(localStorage, lsKey, JSON.stringify(sbMap[sbKey]));
+        if (assignFn) try { assignFn(sbMap[sbKey]); } catch(e) {}
+      } else {
+        const local = localStorage.getItem(lsKey);
+        if (local) try { sbSet(sbKey, JSON.parse(local)); } catch(e) {}
+      }
+    }
+
+    applyOrPush('earnings',         'tgf4_earnings',         v => earningsLog = v);
+    applyOrPush('spendings',        'tgf4_spendings',        v => spendingsLog = v);
+    applyOrPush('monthlyTargets',   'tgf4_monthlyTargets',   v => monthlyTargets = v);
+    applyOrPush('hires',            'tgf4_hires',            v => hiresData = v);
+    applyOrPush('milestones',       'tgf4_milestones',       v => { milestones.length=0; v.forEach(m=>milestones.push(m)); });
+    applyOrPush('risks',            'tgf4_risks',            v => risksData = v);
+    applyOrPush('deals',            'tgf4_deals',            v => dealsData = v);
+    applyOrPush('org',              'tgf4_org',              v => orgData = v);
+    applyOrPush('channelAnalytics', 'tgf4_channelAnalytics', v => channelAnalytics = v);
+    applyOrPush('revTypes',         'tgf4_revTypes',         v => { customRevTypes.length=0; v.forEach(x=>customRevTypes.push(x)); });
+    applyOrPush('spendTypes',       'tgf4_spendTypes',       v => { customSpendTypes.length=0; v.forEach(x=>customSpendTypes.push(x)); });
+    applyOrPush('staff',            'tgf4_staff',            v => staffData = v);
+
+    // Inline stat edits (RPM, cadence, etc.)
+    if (sbMap['edits']) {
+      Object.entries(sbMap['edits']).forEach(([k, v]) => {
+        _origLsSet.call(localStorage, k, v);
+      });
+    } else {
+      debounceSaveEdits();
+    }
+
+    setSyncStatus('ok', 'Synced ✓');
+  } catch(e) {
+    console.warn('Supabase offline — using local data:', e.message);
+    setSyncStatus('offline', 'Offline');
+  }
+}
+
 // ══════════════════════════════════════════
 //  NAVIGATION
 // ══════════════════════════════════════════
@@ -2003,7 +2135,7 @@ function openAddHireModal() {
 // ══════════════════════════════════════════
 //  MILESTONES
 // ══════════════════════════════════════════
-const milestones = [
+let milestones = [
   // Done
   { channel: 'group',  status: 'done',    date: 'Mar 2026', title: 'WhatNot deal signed',                 desc: '£30,000 partnership confirmed and secured.', priority: 'high' },
   { channel: 'tgfbro', status: 'done',    date: 'Mar 2026', title: 'TGFbro comeback video published',      desc: 'First video after 3-year hiatus — strong initial performance.', priority: 'high' },
@@ -2027,6 +2159,9 @@ const milestones = [
   { channel: 'group',  status: 'pending', date: 'Q1 2027',  title: 'Monthly group revenue £200K',             desc: 'Full revenue target — all silos contributing, major brand deals active.', priority: 'high' },
   { channel: 'max',    status: 'pending', date: 'Q1 2027',  title: 'TGF Max platform launch',                 desc: 'Premium subscription product live. Target: 1,000 paying subscribers at £15/mo.', priority: 'medium' },
 ];
+
+// Restore milestones from localStorage if user has edited them
+(function() { try { const s=localStorage.getItem('tgf4_milestones'); if(s){const d=JSON.parse(s);if(d&&d.length){milestones.length=0;d.forEach(m=>milestones.push(m));}} } catch(e){} })();
 
 let _milestoneTab = 'all';
 let _milestoneImp = 'all';
@@ -2935,7 +3070,10 @@ function deleteDeal(id) {
 // ══════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Load remote data first; falls back to localStorage if offline
+  await sbLoadAll();
+  // After sbLoadAll, structured vars are up to date — now load derived state
   loadChannelAnalytics();
   loadDeals();
   restoreEdits();
