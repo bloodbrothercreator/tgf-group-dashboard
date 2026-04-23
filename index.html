@@ -3317,6 +3317,16 @@ function deleteCsvUpload(key, csvId) {
   renderHistorySection();
 }
 
+function clearLegacyHistData(key) {
+  if (!confirm('Clear all historical data for this channel? This cannot be undone.')) return;
+  localStorage.removeItem(`tgf4_hist_${key}_master`);
+  localStorage.removeItem(`tgf4_hist_${key}_365d`);
+  localStorage.removeItem(`tgf4_hist_${key}_90d`);
+  localStorage.removeItem(`tgf4_hist_${key}_api`);
+  syncHistRevenueToFinance(key);
+  renderHistorySection();
+}
+
 function loadHistMaster(key) {
   // Try master key first, fall back to legacy keys for backward compat
   for (const k of [`tgf4_hist_${key}_master`, `tgf4_hist_${key}_365d`, `tgf4_hist_${key}_90d`]) {
@@ -3445,31 +3455,42 @@ function renderHistorySection() {
     </div>
   </div>`;
 
-  // CSV log panel
+  // CSV log panel — always shown
   const csvLog = getCsvLog(histKey);
-  const fmtDate = iso => new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-  const fmtShort = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}) : '—';
-  if (csvLog.length > 0) {
-    html += `<div class="card" style="padding:16px;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.7px;text-transform:uppercase;margin-bottom:10px">📂 Uploaded CSVs</div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead><tr style="color:var(--muted)">
-          <th style="text-align:left;padding:4px 8px">File</th>
-          <th style="text-align:left;padding:4px 8px">Date Range</th>
-          <th style="text-align:left;padding:4px 8px">Rows</th>
-          <th style="text-align:left;padding:4px 8px">Uploaded</th>
-          <th style="padding:4px 8px"></th>
-        </tr></thead>
-        <tbody>${csvLog.map(c => `<tr style="border-top:1px solid var(--border)">
-          <td style="padding:6px 8px;color:var(--text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.filename}">${c.filename}</td>
-          <td style="padding:6px 8px;color:var(--muted)">${fmtShort(c.from)} – ${fmtShort(c.to)}</td>
-          <td style="padding:6px 8px;color:var(--muted)">${c.rowCount}</td>
-          <td style="padding:6px 8px;color:var(--muted)">${fmtDate(c.uploadedAt)}</td>
-          <td style="padding:6px 8px"><button class="edit-btn" style="color:#ef4444" onclick="deleteCsvUpload('${histKey}','${c.id}')" title="Delete this CSV">🗑</button></td>
-        </tr>`).join('')}</tbody>
-      </table>
-    </div>`;
-  }
+  const fmtDate  = iso => new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const fmtShort = d   => d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}) : '—';
+  const hasLegacyData = masterLen > 0 && csvLog.length === 0;
+
+  const csvRows = csvLog.length > 0
+    ? csvLog.map(c => `<tr style="border-top:1px solid var(--border)">
+        <td style="padding:6px 8px;color:var(--text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.filename}">${c.filename}</td>
+        <td style="padding:6px 8px;color:var(--muted)">${fmtShort(c.from)} – ${fmtShort(c.to)}</td>
+        <td style="padding:6px 8px;color:var(--muted)">${c.rowCount}</td>
+        <td style="padding:6px 8px;color:var(--muted)">${fmtDate(c.uploadedAt)}</td>
+        <td style="padding:6px 8px"><button class="edit-btn" style="color:#ef4444" onclick="deleteCsvUpload('${histKey}','${c.id}')" title="Delete this CSV">🗑</button></td>
+      </tr>`).join('')
+    : `<tr><td colspan="5" style="padding:10px 8px;color:var(--muted);font-size:12px">
+        ${hasLegacyData
+          ? `⚠ Data loaded from a previous session — re-upload your CSV to register it in the log and enable deletion.`
+          : `No CSVs uploaded yet. Use the Upload CSV button above.`}
+      </td></tr>`;
+
+  html += `<div class="card" style="padding:16px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.7px;text-transform:uppercase">📂 Uploaded CSVs</div>
+      ${hasLegacyData ? `<button class="btn-secondary" style="font-size:11px;padding:4px 10px;color:#ef4444;border-color:#ef44441a" onclick="clearLegacyHistData('${histKey}')">Clear old data</button>` : ''}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="color:var(--muted)">
+        <th style="text-align:left;padding:4px 8px">File</th>
+        <th style="text-align:left;padding:4px 8px">Date Range</th>
+        <th style="text-align:left;padding:4px 8px">Rows</th>
+        <th style="text-align:left;padding:4px 8px">Uploaded</th>
+        <th style="padding:4px 8px"></th>
+      </tr></thead>
+      <tbody>${csvRows}</tbody>
+    </table>
+  </div>`;
 
   if (!data || !data.length) {
     const periodLabel = histPeriod === '28' ? '28-day' : histPeriod === '90' ? '90-day' : '365-day';
