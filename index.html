@@ -2749,7 +2749,7 @@ function renderChannelCards() {
           <div style="font-size:12px;color:var(--gold);font-weight:700">£${a.revenue > 0 ? a.revenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '0'} <span style="color:var(--muted);font-weight:400;font-size:11px">28-day revenue</span></div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
             ${lastUpdatedBadge(a.lastUpdated)}
-            <span style="font-size:11px;color:var(--muted)">${a.cadence}</span>
+            <span style="font-size:11px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:4px" onclick="openCadenceModal('${def.key}')" title="Edit upload cadence">${a.cadence || 'Set cadence'} <span style="opacity:0.5;font-size:10px">✏</span></span>
           </div>
         </div>
         <button class="btn-secondary" style="font-size:11px;padding:6px 14px" onclick="showChannelHistory('${def.key}')">📈 History</button>
@@ -3726,6 +3726,85 @@ async function fetchYouTubeAnalytics() {
     btn.disabled = false;
     if (synced > 0) setTimeout(() => { if(btn) btn.textContent = '↻ Sync from YouTube'; }, 3000);
   }
+
+  // Background: auto-fetch 90d + 365d history for history charts
+  if (synced > 0) {
+    setSyncStatus('syncing', 'Fetching historical data…');
+    for (const def of CHANNEL_DEFS) {
+      const channelId = (channelAnalytics[def.key] || {}).channelId;
+      if (!channelId) continue;
+      await syncYouTubeHistory(def.key, channelId);
+    }
+    setSyncStatus('ok', 'History updated ✓');
+  }
+}
+
+// Fetch day-by-day history from Analytics API and store in history localStorage slots
+async function syncYouTubeHistory(key, channelId) {
+  for (const days of [90, 365]) {
+    const period  = days === 90 ? '90d' : '365d';
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    try {
+      const url = `/api/youtube-analytics?action=analytics&channel_id=${encodeURIComponent(channelId)}&refresh_token=${encodeURIComponent(ytRefreshToken)}&start_date=${startDate}&end_date=${endDate}`;
+      const res  = await fetch(url);
+      const data = await res.json();
+      if (data.error || !data.columnHeaders) continue;
+
+      const headers = data.columnHeaders.map(h => h.name);
+      const col = n => headers.indexOf(n);
+      const rows = data.rows || [];
+
+      // Build cumulative subscriber count (running total of gains - losses)
+      let cumSubs = 0;
+      const parsed = rows.map(row => {
+        const gained = row[col('subscribersGained')] || 0;
+        const lost   = row[col('subscribersLost')]   || 0;
+        cumSubs += (gained - lost);
+        return {
+          date:       row[col('day')] || row[0],
+          views:      row[col('views')]                   || 0,
+          subs:       cumSubs,
+          subsGained: gained,
+          subsLost:   lost,
+          revenue:    row[col('estimatedRevenue')]        || 0,
+          watchTime:  (row[col('estimatedMinutesWatched')] || 0) / 60,
+          impressions:0,
+          ctr:        0,
+          avgDur:     row[col('averageViewDuration')]     || 0,
+        };
+      }).filter(r => r.date);
+
+      if (parsed.length > 0) {
+        localStorage.setItem(`tgf4_hist_${key}_${period}`, JSON.stringify(parsed));
+      }
+    } catch(e) { console.warn('History sync error for', key, period, e); }
+  }
+}
+
+// ── Cadence editor ──────────────────────────────────────────────────────────
+function openCadenceModal(key) {
+  const def = CHANNEL_DEFS.find(d => d.key === key);
+  const a   = channelAnalytics[key] || {};
+  const presets = ['1×/day','2×/wk','1×/wk','2×/month','1×/month','Biweekly','As needed','Blocked','TBC'];
+  const html = `
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="form-label">Upload Cadence — ${def.name}</label>
+        <input class="form-input" id="cadence-input" value="${a.cadence||''}" placeholder="e.g. 2×/wk" style="margin-bottom:10px">
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${presets.map(p => `<button class="btn-secondary" style="font-size:11px;padding:4px 10px" onclick="document.getElementById('cadence-input').value='${p}'">${p}</button>`).join('')}
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin:0">This updates the cadence shown on the channel card and in any site-wide references.</p>
+    </div>`;
+  openModal(`Edit Cadence — ${def.name}`, html, () => {
+    const val = (document.getElementById('cadence-input').value || '').trim();
+    if (!val) return;
+    channelAnalytics[key] = { ...(channelAnalytics[key] || {}), cadence: val };
+    saveChannelAnalytics();
+    renderChannelCards();
+  }, 'Save');
 }
 
 async function fetchYouTubeStats() {
