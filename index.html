@@ -4678,16 +4678,30 @@ function openNotionSettingsModal() {
 
 // ── Data ──────────────────────────────────
 const DEFAULT_CAL_TYPES = [
-  { id:'shoot',      label:'Shoot',      color:'#3b82f6' },
-  { id:'holiday',    label:'Holiday',    color:'#22c55e' },
-  { id:'ooo',        label:'OOO',        color:'#f59e0b' },
-  { id:'commitment', label:'Commitment', color:'#8b5cf6' },
+  { id:'shoot',       label:'Shoot',         color:'#3b82f6' },
+  { id:'holiday',     label:'Holiday',       color:'#22c55e' },
+  { id:'bankholiday', label:'Bank Holiday',  color:'#6b7280' },
+  { id:'ooo',         label:'OOO',           color:'#f59e0b' },
+  { id:'commitment',  label:'Commitment',    color:'#8b5cf6' },
   { id:'meeting',    label:'Meeting',    color:'#72C2E8' },
   { id:'illness',    label:'Illness',    color:'#ef4444' },
 ];
 
 let calEventTypes = (function(){
-  try { const s=localStorage.getItem('tgf4_calEventTypes'); if(s){const d=JSON.parse(s);if(d&&d.length)return d;} } catch(e){}
+  try {
+    const s=localStorage.getItem('tgf4_calEventTypes');
+    if(s){
+      const d=JSON.parse(s);
+      if(d&&d.length){
+        // Ensure bankholiday type is always present (added in later version)
+        if(!d.find(t=>t.id==='bankholiday')){
+          d.splice(2,0,{id:'bankholiday',label:'Bank Holiday',color:'#6b7280'});
+          localStorage.setItem('tgf4_calEventTypes',JSON.stringify(d));
+        }
+        return d;
+      }
+    }
+  } catch(e){}
   return DEFAULT_CAL_TYPES.map(t=>({...t}));
 })();
 
@@ -4716,17 +4730,22 @@ const UK_BANK_HOLIDAYS = [
   {date:'2027-12-27',title:'Christmas Day (sub)'},{date:'2027-12-28',title:'Boxing Day (sub)'},
 ];
 (function seedBankHolidays() {
+  let dirty = false;
+  // Migrate any old bank holidays that were saved as type:'holiday' → type:'bankholiday'
+  calEvents.forEach(e => {
+    if (e.bankHoliday && e.type !== 'bankholiday') { e.type='bankholiday'; dirty=true; }
+  });
+  // Seed missing bank holidays
   const existing = new Set(calEvents.filter(e=>e.bankHoliday).map(e=>e.date));
-  let added = false;
   UK_BANK_HOLIDAYS.forEach(h => {
     if (!existing.has(h.date)) {
-      calEvents.push({ id:'bh_'+h.date, date:h.date, title:h.title, type:'holiday',
+      calEvents.push({ id:'bh_'+h.date, date:h.date, title:h.title, type:'bankholiday',
         bankHoliday:true, people:[], channel:'', endDate:'', startTime:'', endTime:'',
         description:'UK Bank Holiday (England & Wales)' });
-      added = true;
+      dirty = true;
     }
   });
-  if (added) localStorage.setItem('tgf4_calEvents', JSON.stringify(calEvents));
+  if (dirty) localStorage.setItem('tgf4_calEvents', JSON.stringify(calEvents));
 })();
 
 let calView = 'monthly';
