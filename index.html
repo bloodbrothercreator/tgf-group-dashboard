@@ -1666,7 +1666,7 @@ function renderOverviewBreakdown() {
 // ══════════════════════════════════════════
 //  FINANCIAL TRACKER — DATA & STATE
 // ══════════════════════════════════════════
-const CHANNELS = ['TGFbro', 'Group', 'Gaming', 'Food', 'Live', 'Max', 'Troof or Miff'];
+const CHANNELS = ['TGFbro', 'Gaming', 'Food', 'Live', 'Max', 'Troof or Miff'];
 
 const defaultRevTypes   = ['AdSense','Sponsorship','Partnership','Merch','Live Event','Subscription','Other'];
 const defaultSpendTypes = ['Staff','Equipment','Travel','Software','Ads','Production','Other'];
@@ -1719,7 +1719,7 @@ try {
 } catch(e) { spendingsLog = []; }
 
 // ── Per-month targets: { "2026-04": { TGFbro:25000, ... }, ... }
-const defaultTargets = { TGFbro:25000, Group:50000, Gaming:5000, Food:0, Live:0, Max:0, 'Troof or Miff':2000 };
+const defaultTargets = { TGFbro:25000, Gaming:5000, Food:0, Live:0, Max:0, 'Troof or Miff':2000 };
 let monthlyTargets = {};
 try {
   const raw = localStorage.getItem('tgf4_monthlyTargets');
@@ -2037,7 +2037,7 @@ function openSetMonthTargetsModal() {
         if (el) monthlyTargets[currentMonth][ch] = parseFloat(el.value)||0;
       });
       localStorage.setItem('tgf4_monthlyTargets', JSON.stringify(monthlyTargets));
-      renderChannelTargets(); updateRevProgress(); closeModal();
+      renderChannelTargets(); updateRevProgress(); updatePvaBreakdown(currentMonth); closeModal();
     }, 'Save Targets');
 }
 
@@ -2642,24 +2642,41 @@ function updatePvaBreakdown(month) {
   labelEl.textContent = formatMonthLabel(month);
 
   const targets = getMonthTargets(month);
+  const monthLog = getMonthLog(earningsLog, month);
   const rows = CHANNELS.map(ch => {
     const target = Number(targets[ch] || 0);
-    const actual = getMonthLog(earningsLog, month).filter(e => e.channel === ch).reduce((s,e) => s + Number(e.amount), 0);
+    const actual = monthLog.filter(e => e.channel === ch).reduce((s,e) => s + Number(e.amount), 0);
     const pct = target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : (actual > 0 ? 100 : 0);
     const fillClass = actual >= target && target > 0 ? 'over' : actual > 0 ? '' : 'under';
     return { ch, target, actual, pct, fillClass };
   }).filter(r => r.target > 0 || r.actual > 0);
 
-  if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);font-size:12px;padding:12px 10px">No data for this month.</td></tr>';
-    return;
-  }
+  // Compute Group totals from all channels
+  const groupTarget = CHANNELS.reduce((s, ch) => s + Number(targets[ch] || 0), 0);
+  const groupActual = monthLog.reduce((s, e) => s + Number(e.amount), 0);
+  const groupPct = groupTarget > 0 ? Math.min(100, Math.round((groupActual / groupTarget) * 100)) : (groupActual > 0 ? 100 : 0);
+  const groupFill = groupActual >= groupTarget && groupTarget > 0 ? 'over' : groupActual > 0 ? '' : 'under';
 
-  tbody.innerHTML = rows.map(r => `
+  const groupRow = `
+    <tr style="border-bottom:2px solid var(--border)">
+      <td style="font-weight:800;font-size:14px;padding:10px 10px">TGF Group</td>
+      <td style="color:var(--muted);font-size:13px;font-weight:700">£${groupTarget.toLocaleString()}</td>
+      <td style="font-size:13px;font-weight:700;color:${groupActual >= groupTarget && groupTarget > 0 ? 'var(--green)' : groupActual > 0 ? 'var(--gold)' : 'var(--muted)'}">£${groupActual.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="pva-bar-track" style="flex:1"><div class="pva-bar-fill ${groupFill}" style="width:${groupPct}%"></div></div>
+          <span style="font-size:11px;color:var(--muted);min-width:32px;text-align:right">${groupPct}%</span>
+        </div>
+      </td>
+    </tr>`;
+
+  const channelRows = rows.length === 0
+    ? '<tr><td colspan="4" style="color:var(--muted);font-size:12px;padding:12px 10px">No channel data for this month.</td></tr>'
+    : rows.map(r => `
     <tr>
       <td style="font-weight:600">${r.ch}</td>
       <td style="color:var(--muted)">£${r.target.toLocaleString()}</td>
-      <td style="color:${r.actual >= r.target && r.target > 0 ? 'var(--green)' : r.actual > 0 ? 'var(--gold)' : 'var(--muted)'}">£${r.actual.toLocaleString()}</td>
+      <td style="color:${r.actual >= r.target && r.target > 0 ? 'var(--green)' : r.actual > 0 ? 'var(--gold)' : 'var(--muted)'}">£${r.actual.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="pva-bar-track" style="flex:1"><div class="pva-bar-fill ${r.fillClass}" style="width:${r.pct}%"></div></div>
@@ -2668,6 +2685,8 @@ function updatePvaBreakdown(month) {
       </td>
     </tr>
   `).join('');
+
+  tbody.innerHTML = groupRow + channelRows;
 }
 
 // ══════════════════════════════════════════
