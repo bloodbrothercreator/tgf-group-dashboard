@@ -3499,28 +3499,94 @@ function handleHistoryCsv(key, period) {
 
 function parseHistoryCsv(csvText) {
   const lines = csvText.split('\n');
+  const getNum = (row, ci) => {
+    if (ci < 0 || ci >= row.length || !row[ci]) return 0;
+    return parseFloat(row[ci].toString().replace(/[,%$£\s]/g,'').trim()) || 0;
+  };
+  const toDateStr = raw => {
+    if (!raw) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw.trim())) return raw.trim();
+    const d = new Date(raw.trim());
+    return isNaN(d) ? null : calDateStr(d);
+  };
 
-  // Find the header row — first row where col[0] lowercased is 'date'
+  // Find header row
   let headerIdx = -1;
+  let headers = [];
   for (let i = 0; i < Math.min(20, lines.length); i++) {
-    const cols = parseCSVLine(lines[i]);
-    if (cols.length > 1 && cols[0].trim().toLowerCase() === 'date') { headerIdx = i; break; }
+    const cols = parseCSVLine(lines[i]).map(h => h.trim().toLowerCase().replace(/\s+/g,' '));
+    if (cols.length > 1 && (cols[0] === 'date' || cols.some(c => c === 'video title') || cols.some(c => c === 'content'))) {
+      headerIdx = i; headers = cols; break;
+    }
   }
-  // Fallback: find first row where col[0] looks like a date, header is one row before
+  // Fallback: date series where col[0] is a date value
   if (headerIdx < 0) {
     for (let i = 1; i < Math.min(20, lines.length); i++) {
       const cols = parseCSVLine(lines[i]);
       if (cols.length > 1 && /^\d{4}-\d{2}-\d{2}$/.test(cols[0].trim())) { headerIdx = i - 1; break; }
     }
+    if (headerIdx >= 0) headers = parseCSVLine(lines[headerIdx]).map(h => h.trim().toLowerCase().replace(/\s+/g,' '));
   }
   if (headerIdx < 0) throw new Error('Cannot find a "Date" header row');
 
-  const headers = parseCSVLine(lines[headerIdx]).map(h => h.trim().toLowerCase().replace(/\s+/g,' '));
   const fc = (...keys) => {
     for (const k of keys) { const i = headers.findIndex(h => h.includes(k.toLowerCase())); if (i >= 0) return i; }
     return -1;
   };
-  const cDate = fc('date');
+
+  // ── Video-level format (Content / "Video title" column present) ──────────────
+  const isVideoFormat = headers.includes('video title') || (headers[0] === 'content' && headers.includes('video publish time'));
+  if (isVideoFormat) {
+    const cTitle  = fc('video title');
+    const cPubDate= fc('video publish time', 'publish time', 'publish date');
+    const cViews  = fc('views');
+    const cWatch  = fc('watch time');
+    const cSubs   = fc('subscribers');
+    const cRev    = fc('estimated revenue', 'revenue');
+    const cImpr   = fc('impressions');
+    const cCtr    = fc('click-through', 'ctr');
+    const cDur    = fc('duration');
+
+    // Group by publish date, summing metrics
+    const byDate = {};
+    for (let i = headerIdx + 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const row = parseCSVLine(lines[i]);
+      const content = (row[0] || '').trim();
+      // Skip totals row and rows with no publish date
+      if (content.toLowerCase() === 'total' || content === '') continue;
+      const dateStr = cPubDate >= 0 ? toDateStr(row[cPubDate]) : null;
+      if (!dateStr) continue;
+      if (!byDate[dateStr]) byDate[dateStr] = { views:0, watchTime:0, subsGained:0, revenue:0, impressions:0, ctrSum:0, ctrN:0, videos:0 };
+      const d = byDate[dateStr];
+      d.views       += getNum(row, cViews);
+      d.watchTime   += getNum(row, cWatch);        // already in hours
+      d.subsGained  += getNum(row, cSubs);         // subscriber change per video
+      d.revenue     += getNum(row, cRev);
+      d.impressions += getNum(row, cImpr);
+      const ctrVal   = getNum(row, cCtr);
+      if (ctrVal > 0) { d.ctrSum += ctrVal; d.ctrN++; }
+      d.videos++;
+    }
+
+    // Convert to rows sorted by date, compute cumulative subs for growth chart
+    let cumSubs = 0;
+    const rows = Object.entries(byDate)
+      .sort((a,b) => new Date(a[0]) - new Date(b[0]))
+      .map(([date, d]) => {
+        cumSubs += d.subsGained;
+        return {
+          date, views: d.views, subs: cumSubs, subsGained: d.subsGained, subsLost: 0,
+          revenue: d.revenue, watchTime: d.watchTime, impressions: d.impressions,
+          ctr: d.ctrN > 0 ? d.ctrSum / d.ctrN : 0, avgDur: 0,
+        };
+      });
+    if (rows.length < 1) throw new Error('No video rows with publish dates found');
+    return rows;
+  }
+
+  // ── Date-series format (Overview export — one row per day) ──────────────────
+  const cDate  = fc('date');
   const cViews = fc('views');
   const cSubs  = fc('subscribers', 'subscriber count', 'total subscriber');
   const cGained= fc('subscribers gained', 'net new subscriber');
@@ -3531,11 +3597,6 @@ function parseHistoryCsv(csvText) {
   const cCtr   = fc('click-through', 'ctr');
   const cAvgDur= fc('average view duration', 'avg view duration');
 
-  const getNum = (row, ci) => {
-    if (ci < 0 || !row[ci]) return 0;
-    return parseFloat(row[ci].toString().replace(/[,%$£\s]/g,'').trim()) || 0;
-  };
-
   const rows = [];
   for (let i = headerIdx + 1; i < lines.length; i++) {
     if (!lines[i].trim()) continue;
@@ -3543,24 +3604,13 @@ function parseHistoryCsv(csvText) {
     if (cDate < 0 || !row[cDate]) continue;
     const dateRaw = row[cDate].trim();
     if (dateRaw.toLowerCase().includes('total') || dateRaw.toLowerCase().includes('average') || !dateRaw) continue;
-
-    let dateStr = dateRaw;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      const parsed = new Date(dateStr);
-      if (!isNaN(parsed)) dateStr = calDateStr(parsed); else continue;
-    }
-
+    const dateStr = toDateStr(dateRaw);
+    if (!dateStr) continue;
     rows.push({
-      date:        dateStr,
-      views:       getNum(row, cViews),
-      subs:        getNum(row, cSubs),
-      subsGained:  getNum(row, cGained),
-      subsLost:    getNum(row, cLost),
-      revenue:     getNum(row, cRev),
-      watchTime:   getNum(row, cWatch),
-      impressions: getNum(row, cImpr),
-      ctr:         getNum(row, cCtr),
-      avgDur:      getNum(row, cAvgDur),
+      date: dateStr, views: getNum(row, cViews), subs: getNum(row, cSubs),
+      subsGained: getNum(row, cGained), subsLost: getNum(row, cLost),
+      revenue: getNum(row, cRev), watchTime: getNum(row, cWatch),
+      impressions: getNum(row, cImpr), ctr: getNum(row, cCtr), avgDur: getNum(row, cAvgDur),
     });
   }
   rows.sort((a,b) => new Date(a.date) - new Date(b.date));
