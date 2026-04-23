@@ -2042,7 +2042,7 @@ function openSetMonthTargetsModal() {
         if (el) monthlyTargets[currentMonth][ch] = parseFloat(el.value)||0;
       });
       localStorage.setItem('tgf4_monthlyTargets', JSON.stringify(monthlyTargets));
-      renderChannelTargets(); updateRevProgress(); updatePvaBreakdown(currentMonth); closeModal();
+      renderChannelTargets(); updateRevProgress(); updatePvaChart(); updatePvaBreakdown(currentMonth); closeModal();
     }, 'Save Targets');
 }
 
@@ -4671,7 +4671,12 @@ function calDateStr(d) {
 function getWeekStart(d) {
   const c = new Date(d); c.setDate(c.getDate()-c.getDay()); c.setHours(0,0,0,0); return c;
 }
-function getEventsForDay(ds, filtered) { return filtered.filter(e=>e.date===ds); }
+function getEventsForDay(ds, filtered) {
+  return filtered.filter(e => {
+    if (e.endDate && e.endDate > e.date) return ds >= e.date && ds <= e.endDate;
+    return e.date === ds;
+  });
+}
 function isLightColor(hex) {
   const c=hex.replace('#','');
   return (parseInt(c.substring(0,2),16)*299+parseInt(c.substring(2,4),16)*587+parseInt(c.substring(4,6),16)*114)/1000>128;
@@ -4754,7 +4759,9 @@ function renderCalDayCell(date,otherMonth,today,filtered) {
     const color=getCalTypeColor(ev.type);
     const textColor=isLightColor(color)?'#111':'#fff';
     const channel=ev.channel?`<span style="font-size:8px;background:rgba(255,255,255,.2);border-radius:3px;padding:1px 4px;margin-left:3px">${ev.channel}</span>`:'';
-    evHtml+=`<span class="cal-event-pill" style="background:${color};color:${textColor}" onclick="event.stopPropagation();editCalEvent('${ev.id}')" title="${(ev.title||ev.type).replace(/"/g,'&quot;')}">${ev.title||ev.type}${channel}</span>`;
+    const multiDay=ev.endDate&&ev.endDate>ev.date;
+    const pillLabel=(ev.title||ev.type)+(multiDay?' ⟶':'');
+    evHtml+=`<span class="cal-event-pill" style="background:${color};color:${textColor}${multiDay?';border-right:2px dashed rgba(255,255,255,.4)':''}" onclick="event.stopPropagation();editCalEvent('${ev.id}')" title="${(ev.title||ev.type).replace(/"/g,'&quot;')}${multiDay?' ('+ev.date+' → '+ev.endDate+')':''}">${pillLabel}${channel}</span>`;
   });
   if (events.length>MAX) evHtml+=`<span style="font-size:10px;color:var(--muted);padding:1px 4px">+${events.length-MAX} more</span>`;
   return `<div class="${cls}" onclick="openAddCalEventModal('${ds}')"><div class="cal-day-num">${date.getDate()}</div>${evHtml}</div>`;
@@ -4809,7 +4816,7 @@ function renderDailyCalendar() {
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
             <div style="font-size:16px;font-weight:700">${ev.title||typLabel}${channel}</div>
-            <div style="font-size:11px;font-weight:600;color:${color};margin-top:3px;text-transform:uppercase;letter-spacing:.5px">${typLabel}${ev.recurringGroupId?'  ↻ Recurring':''}</div>
+            <div style="font-size:11px;font-weight:600;color:${color};margin-top:3px;text-transform:uppercase;letter-spacing:.5px">${typLabel}${ev.recurringGroupId?'  ↻ Recurring':''}${ev.endDate&&ev.endDate>ev.date?`  · ${ev.date} → ${ev.endDate}`:''}</div>
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn-secondary" style="font-size:11px;padding:5px 10px" onclick="editCalEvent('${ev.id}')">Edit</button>
@@ -4897,9 +4904,15 @@ function calEventFormHtml(ev, defaultDate) {
         <option value="">— Select channel —</option>${channelOpts}
       </select>
     </div>
-    <div>
-      <label class="form-label">Date</label>
-      <input class="form-input" id="ce-date" type="date" value="${ev?ev.date:defaultDate||''}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <label class="form-label">Start Date</label>
+        <input class="form-input" id="ce-date" type="date" value="${ev?ev.date:defaultDate||''}" onchange="ceEndDateMin(this.value)">
+      </div>
+      <div>
+        <label class="form-label">End Date <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <input class="form-input" id="ce-end-date" type="date" value="${ev&&ev.endDate?ev.endDate:''}" min="${ev?ev.date:defaultDate||''}">
+      </div>
     </div>
     <div>
       <label class="form-label">People</label>
@@ -4926,6 +4939,10 @@ function calTypeChanged(val) {
   const row=document.getElementById('ce-channel-row');
   if(row) row.style.display=val==='shoot'?'block':'none';
 }
+function ceEndDateMin(startVal) {
+  const end=document.getElementById('ce-end-date');
+  if(end){ end.min=startVal; if(end.value&&end.value<startVal) end.value=startVal; }
+}
 
 function openAddCalEventModal(ds) {
   const d=(ds&&ds!=='null')?ds:new Date().toISOString().slice(0,10);
@@ -4947,6 +4964,8 @@ function saveCalEventFromModal(existingId, fallbackDate) {
   const type =(document.getElementById('ce-type')||{}).value||'meeting';
   const title=(document.getElementById('ce-title').value||'').trim();
   const date =(document.getElementById('ce-date').value)||fallbackDate;
+  const rawEnd=(document.getElementById('ce-end-date')||{}).value||'';
+  const endDate=rawEnd&&rawEnd>date?rawEnd:(rawEnd===date?'':rawEnd&&rawEnd<date?date:'');
   const desc =(document.getElementById('ce-desc').value||'').trim();
   const chan  =type==='shoot'?(document.getElementById('ce-channel').value||''):'';
   const recur=(document.getElementById('ce-recurring')||{}).value||'none';
@@ -4955,10 +4974,10 @@ function saveCalEventFromModal(existingId, fallbackDate) {
 
   if (existingId) {
     const idx=calEvents.findIndex(e=>e.id===existingId);
-    if (idx>-1) calEvents[idx]={...calEvents[idx], type, title, date, description:desc, channel:chan, people};
+    if (idx>-1) calEvents[idx]={...calEvents[idx], type, title, date, endDate:endDate||'', description:desc, channel:chan, people};
   } else {
     if (recur==='none') {
-      calEvents.push({ id:'ce_'+Date.now(), type, title, date, description:desc, channel:chan, people });
+      calEvents.push({ id:'ce_'+Date.now(), type, title, date, endDate:endDate||'', description:desc, channel:chan, people });
     } else {
       generateRecurringInstances(type,title,date,desc,chan,people,recur);
     }
