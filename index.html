@@ -1830,7 +1830,7 @@ function renderEarningsLog() {
       return `<tr>
         <td>${formatMonthLabel(e.date)}</td><td>${e.channel}</td><td>${e.type}</td>
         <td style="color:var(--gold);font-weight:700">£${Number(e.amount).toLocaleString()}</td>
-        <td style="color:var(--muted);font-size:12px;max-width:180px;white-space:normal">${e.notes||''}</td>
+        <td style="color:var(--muted);font-size:12px;max-width:180px;white-space:normal">${e.notes||''}${(e.id||'').startsWith('ytrev_') ? ' <span style="font-size:10px;background:rgba(114,194,232,.12);color:#72C2E8;border:1px solid #4A9EC744;border-radius:3px;padding:1px 5px">auto</span>' : ''}</td>
         <td style="display:flex;gap:4px">
           <button class="edit-btn" onclick="editEarningsEntry(${i})">✏️</button>
           <button class="edit-btn" onclick="deleteEarningsEntry(${i})">🗑</button>
@@ -3273,10 +3273,13 @@ function loadHistMaster(key) {
 function getHistData(key, period) {
   const master = loadHistMaster(key);
   if (!master || !master.length) return null;
-  const days = period === '28' ? 28 : period === '90' ? 90 : null;
-  if (!days) return master;  // 365 = all
-  // Return last N entries (already sorted ascending by date)
-  return master.length > days ? master.slice(master.length - days) : master;
+  if (period === '365') return master;
+  const days = period === '28' ? 28 : 90;
+  // Filter by actual calendar dates from the most recent entry — NOT by record count
+  const mostRecent = new Date(master[master.length - 1].date);
+  const cutoff = new Date(mostRecent.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+  const filtered = master.filter(r => new Date(r.date) >= cutoff);
+  return filtered.length > 0 ? filtered : master.slice(-days);
 }
 function saveHistData(key, newRows) {
   // Merge new rows into master — new rows win on duplicate dates, old rows preserved otherwise
@@ -3288,6 +3291,49 @@ function saveHistData(key, newRows) {
   localStorage.setItem(`tgf4_hist_${key}_master`, JSON.stringify(merged));
   localStorage.setItem(`tgf4_hist_${key}_lastUpdate`, new Date().toISOString());
   return merged;
+}
+
+// Sync monthly AdSense revenue from history CSV into the earnings log automatically
+function syncHistRevenueToFinance(key) {
+  const master = loadHistMaster(key);
+  if (!master || !master.length) return;
+  const def = CHANNEL_DEFS.find(d => d.key === key);
+  if (!def) return;
+
+  // Group revenue by YYYY-MM month
+  const byMonth = {};
+  master.forEach(r => {
+    if (!r.revenue || r.revenue <= 0) return;
+    const month = (r.date || '').substring(0, 7);
+    if (!month || month.length < 7) return;
+    byMonth[month] = (byMonth[month] || 0) + r.revenue;
+  });
+
+  let changed = false;
+  Object.entries(byMonth).forEach(([month, amount]) => {
+    const rounded = Math.round(amount * 100) / 100;
+    if (rounded <= 0) return;
+    const autoId = `ytrev_${key}_${month}`;
+    const idx = earningsLog.findIndex(e => e.id === autoId);
+    if (idx >= 0) {
+      if (Math.abs(earningsLog[idx].amount - rounded) > 0.005) {
+        earningsLog[idx].amount = rounded;
+        changed = true;
+      }
+    } else {
+      earningsLog.push({ id: autoId, date: month, channel: def.name, type: 'AdSense', amount: rounded, notes: 'Auto from YouTube CSV' });
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    localStorage.setItem('tgf4_earnings', JSON.stringify(earningsLog));
+    // Refresh finance UI if rendered
+    if (typeof renderEarningsLog    === 'function') renderEarningsLog();
+    if (typeof renderMonthlyPnL     === 'function') renderMonthlyPnL();
+    if (typeof renderChannelTargets === 'function') renderChannelTargets();
+    if (typeof updateRevProgress    === 'function') updateRevProgress();
+  }
 }
 
 function showChannelHistory(key) {
@@ -3525,13 +3571,12 @@ function handleHistoryCsv(key) {
       const rows = parseHistoryCsv(e.target.result);
       if (rows.length < 1) throw new Error('No data rows found in this CSV');
       const master = saveHistData(key, rows);
-      const existingDays  = (loadHistMaster(key) || []).length;
-      const newDays = rows.length;
+      syncHistRevenueToFinance(key);
       renderHistorySection();
       // Brief feedback
       const statusEl = document.getElementById('hist-upload-status');
       if (statusEl) {
-        statusEl.textContent = `✓ Merged ${newDays} rows — ${master.length} days total in history`;
+        statusEl.textContent = `✓ Merged ${rows.length} rows — ${master.length} days total · Finance tracker updated`;
         statusEl.style.color = '#22c55e';
       }
     } catch(err) {
@@ -3871,6 +3916,7 @@ async function syncYouTubeHistory(key, channelId) {
 
       if (parsed.length > 0) {
         saveHistData(key, parsed);
+        syncHistRevenueToFinance(key);
       }
     } catch(e) { console.warn('History sync error for', key, period, e); }
   }
