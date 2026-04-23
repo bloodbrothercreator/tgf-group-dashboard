@@ -3597,35 +3597,76 @@ function computeHistMetrics(data) {
            momentum, avgSubsGained };
 }
 
+// Fill every calendar day between first and last date so hover is always daily
+function fillDateGaps(data) {
+  if (!data || data.length < 2) return data;
+  const byDate = {};
+  data.forEach(r => { byDate[r.date] = r; });
+  const start = new Date(data[0].date);
+  const end   = new Date(data[data.length - 1].date);
+  const filled = [];
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const ds = calDateStr(d);
+    filled.push(byDate[ds] || { date: ds, views: 0, watchTimeHrs: 0, revenue: 0, subsGained: 0, subsLost: 0, impressions: 0, ctr: 0, subs: null });
+  }
+  // Interpolate subs through gaps (null → carry-forward nearest real value)
+  let lastSub = null;
+  for (let i = 0; i < filled.length; i++) {
+    if (filled[i].subs !== null && filled[i].subs > 0) { lastSub = filled[i].subs; }
+    else if (filled[i].subs === null && lastSub !== null) { filled[i].subs = lastSub; }
+  }
+  return filled;
+}
+
 function drawHistCharts(data) {
-  const labels   = data.map(r => r.date);
-  const sparse   = data.length > 60;
-  const gridCol  = '#252a38';
-  const tickCol  = '#6b7280';
-  const baseOpts = {
+  const filled  = fillDateGaps(data);
+  const labels  = filled.map(r => r.date);
+  const sparse  = filled.length > 90;
+  const gridCol = '#252a38';
+  const tickCol = '#6b7280';
+
+  const makeOpts = (yFmt) => ({
     responsive: true,
-    plugins: { legend:{ display:false }, tooltip:{ mode:'index', intersect:false } },
+    interaction: { mode: 'index', intersect: false, axis: 'x' },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          title: items => items[0]?.label || '',
+          label: ctx => {
+            const v = ctx.parsed.y;
+            if (v === null || v === undefined) return null;
+            return yFmt ? yFmt(v) : v.toLocaleString();
+          }
+        }
+      }
+    },
     scales: {
-      x: { ticks:{ color:tickCol, maxTicksLimit:8, font:{size:10} }, grid:{ color:gridCol } },
-      y: { ticks:{ color:tickCol, font:{size:10} }, grid:{ color:gridCol } }
+      x: {
+        ticks: { color: tickCol, maxTicksLimit: sparse ? 12 : filled.length <= 28 ? 28 : 14, font: { size: 10 }, maxRotation: 45 },
+        grid: { color: gridCol }
+      },
+      y: { ticks: { color: tickCol, font: { size: 10 } }, grid: { color: gridCol } }
     }
-  };
+  });
 
   // Subscriber growth line
-  const hasSubs = data.some(r => r.subs > 0);
+  const hasSubs = filled.some(r => r.subs !== null && r.subs > 0);
   let subVals;
   if (hasSubs) {
-    subVals = data.map(r => r.subs);
+    subVals = filled.map(r => r.subs);
   } else {
     let running = 0;
-    subVals = data.map(r => { running += (r.subsGained||0)-(r.subsLost||0); return running; });
+    subVals = filled.map(r => { running += (r.subsGained||0)-(r.subsLost||0); return running; });
   }
   const subsEl = document.getElementById('chart-hist-subs');
   if (subsEl) {
     _histCharts.subs = new Chart(subsEl.getContext('2d'), {
       type: 'line',
-      data: { labels, datasets: [{ data:subVals, borderColor:'#72C2E8', backgroundColor:'rgba(114,194,232,.08)', fill:true, borderWidth:2, pointRadius:sparse?0:2, tension:0.3 }] },
-      options: baseOpts
+      data: { labels, datasets: [{ data: subVals, borderColor: '#72C2E8', backgroundColor: 'rgba(114,194,232,.08)', fill: true, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.3, spanGaps: true }] },
+      options: makeOpts(v => v !== null ? Math.round(v).toLocaleString() : '')
     });
   }
 
@@ -3634,8 +3675,8 @@ function drawHistCharts(data) {
   if (viewsEl) {
     _histCharts.views = new Chart(viewsEl.getContext('2d'), {
       type: 'bar',
-      data: { labels, datasets: [{ data:data.map(r=>r.views||0), backgroundColor:'rgba(59,130,246,.7)', borderColor:'#3b82f6', borderWidth:1, borderRadius:2 }] },
-      options: baseOpts
+      data: { labels, datasets: [{ data: filled.map(r => r.views||0), backgroundColor: 'rgba(59,130,246,.7)', borderColor: '#3b82f6', borderWidth: 1, borderRadius: 2 }] },
+      options: makeOpts(v => Math.round(v).toLocaleString())
     });
   }
 
@@ -3644,8 +3685,8 @@ function drawHistCharts(data) {
   if (revEl) {
     _histCharts.revenue = new Chart(revEl.getContext('2d'), {
       type: 'line',
-      data: { labels, datasets: [{ data:data.map(r=>r.revenue||0), borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,.08)', fill:true, borderWidth:2, pointRadius:sparse?0:2, tension:0.3 }] },
-      options: baseOpts
+      data: { labels, datasets: [{ data: filled.map(r => r.revenue||0), borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.08)', fill: true, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.3, spanGaps: true }] },
+      options: makeOpts(v => '£' + v.toFixed(2))
     });
   }
 }
